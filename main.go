@@ -19,9 +19,10 @@ const (
 // Dpfs is the Duplicacy filesystem type
 type Dpfs struct {
 	fuse.FileSystemBase
-	manager *duplicacy.BackupManager
+	// manager *duplicacy.BackupManager
 	storage duplicacy.Storage
 	lock    sync.RWMutex
+	root    string
 }
 
 func NewDuplicacyfs() *Dpfs {
@@ -32,11 +33,12 @@ func NewDuplicacyfs() *Dpfs {
 func (self *Dpfs) Init() {
 	var repository, storageName string
 	var snapshot int
+	var all bool
 
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	_, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%d", &repository, &storageName, &snapshot)
+	_, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%d all", &repository, &storageName, &snapshot, &all)
 	if err != nil {
 		log.WithError(err).Fatal("arg error")
 	}
@@ -62,12 +64,18 @@ func (self *Dpfs) Init() {
 		log.WithField("storageName", storageName).Fatal("storage not found")
 	}
 
-	self.storage = duplicacy.CreateStorage(*preference, false, 4)
+	self.storage = duplicacy.CreateStorage(*preference, false, 1)
 	if self.storage == nil {
 		log.WithField("storageName", storageName).Fatal("could not create storage")
 	}
 
-	self.manager = duplicacy.CreateBackupManager(preference.SnapshotID, self.storage, repository, "", "", "")
+	if all {
+		self.root = "snapshots"
+	} else {
+		self.root = path.Join("snapshots", preference.SnapshotID)
+	}
+
+	// self.manager = duplicacy.CreateBackupManager(preference.SnapshotID, self.storage, repository, "", "", "")
 
 }
 
@@ -81,7 +89,7 @@ func (self *Dpfs) Open(path string, flags int) (errc int, fh uint64) {
 }
 
 func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
-	sp := snapshotPath(path)
+	sp := self.snapshotPath(path)
 	id := uuid.NewV4().String()
 	logger := log.WithField("path", path).WithField("sp", sp).WithField("op", "Getattr").WithField("uuid", id)
 	logger.Info()
@@ -137,22 +145,30 @@ func (self *Dpfs) Readdir(path string,
 	fill func(name string, stat *fuse.Stat_t, ofst int64) bool,
 	ofst int64,
 	fh uint64) (errc int) {
+	// current and previous
 	fill(".", nil, 0)
 	fill("..", nil, 0)
+
 	self.lock.RLock()
 	defer self.lock.RUnlock()
-	sp := snapshotPath(path)
+
+	sp := self.snapshotPath(path)
+	rev := self.revision(path)
 	id := uuid.NewV4().String()
 	logger := log.WithField("path", path).WithField("sp", sp).WithField("op", "Readdir").WithField("uuid", id)
 
 	logger.Info("start")
 
-	// This is a snapshot path
-	if strings.Count(sp, "/") == 2 {
-		manager := duplicacy.CreateSnapshotManager(self.config)
+	// are we loading from a revision
+	if rev != "" {
+		manager := duplicacy.CreateSnapshotManager(duplicacy.CreateConfig(), self.storage)
+		snap := manager.DownloadSnapshot("ah-documents", 8)
+		for _, v := range snap.Files {
+			v.Path
+		}
 	}
 
-	files, _, err := self.storage.ListFiles(0, sp)
+	files, _, err := self.storage.ListFiles(0, sp+"/")
 	if err != nil {
 		logger.WithError(err).WithField("errc", -fuse.ENOSYS).Info("error listing files")
 		return -fuse.ENOSYS
@@ -169,8 +185,31 @@ func (self *Dpfs) Readdir(path string,
 	return 0
 }
 
-func snapshotPath(p string) string {
-	return strings.TrimSuffix(path.Join("snapshots", p), "/")
+func (self *Dpfs) snapshotPath(p string) string {
+	self.lock.RLock()
+	defer self.lock.RUnlock()
+	return strings.TrimSuffix(path.Join(self.root, p), "/")
+}
+
+func (self *Dpfs) revision(p string) (revision string) {
+	self.lock.RLock()
+	defer self.lock.RUnlock()
+
+	slice := strings.Split(p, "/")
+
+	if len(slice) < 2 {
+		return ""
+	}
+
+	if self.root == "snapshots" {
+		if len(slice) < 3 {
+			return ""
+		} else {
+			return slice[2]
+		}
+	}
+
+	return slice[1]
 }
 
 func main() {
