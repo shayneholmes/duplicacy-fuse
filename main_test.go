@@ -27,3 +27,93 @@ func TestDpfs_revision(t *testing.T) {
 		assert.Equal(t, tt.want, got, fmt.Sprintf("%s - %s", tt.name, tt.p))
 	}
 }
+
+func TestDpfs_info(t *testing.T) {
+	allDpfs := Dpfs{root: "snapshots"}
+	idDpfs := Dpfs{root: "snapshots/id"}
+	revDpfs := Dpfs{root: "snapshots/id/3"}
+	tests := []struct {
+		self           *Dpfs
+		p              string
+		wantSnapshotid string
+		wantRevision   int
+		wantErr        bool
+	}{
+		{&allDpfs, "/", "", 0, false},
+		{&allDpfs, "/id", "id", 0, false},
+		{&allDpfs, "/id/3", "id", 3, false},
+		{&allDpfs, "/id/3/filename.txt", "id", 3, false},
+		{&allDpfs, "/id/X", "id", 0, true},
+		{&allDpfs, "/id/X/filename.txt", "id", 0, true},
+		{&allDpfs, "snapshots", "", 0, false},
+		{&allDpfs, "snapshots/id", "id", 0, false},
+		{&allDpfs, "snapshots/id/3", "id", 3, false},
+		{&allDpfs, "snapshots/id/3/filename.txt", "id", 3, false},
+		{&allDpfs, "snapshots/id/X", "id", 0, true},
+		{&allDpfs, "snapshots/id/X/filename.txt", "id", 0, true},
+		{&idDpfs, "/", "id", 0, false},
+		{&idDpfs, "/3", "id", 3, false},
+		{&idDpfs, "/3/filename.txt", "id", 3, false},
+		{&idDpfs, "/X", "id", 0, true},
+		{&idDpfs, "/X/filename.txt", "id", 0, true},
+		{&idDpfs, "snapshots/id", "id", 0, false},
+		{&idDpfs, "snapshots/id/3", "id", 3, false},
+		{&idDpfs, "snapshots/id/3/filename.txt", "id", 3, false},
+		{&idDpfs, "snapshots/id/X", "id", 0, true},
+		{&idDpfs, "snapshots/id/X/filename.txt", "id", 0, true},
+		{&revDpfs, "/", "id", 3, false},
+		{&revDpfs, "/4", "id", 3, false},
+		{&revDpfs, "/4/filename.txt", "id", 3, false},
+		{&revDpfs, "/X", "id", 3, false},
+		{&revDpfs, "/X/filename.txt", "id", 3, false},
+		{&revDpfs, "snapshots/id/3", "id", 3, false},
+		{&revDpfs, "snapshots/id/3/filename.txt", "id", 3, false},
+	}
+	for _, tt := range tests {
+		name := fmt.Sprintf("root: %s; p: %s; snapshotid: %s; revision: %d; err: %v", tt.self.root, tt.p, tt.wantSnapshotid, tt.wantRevision, tt.wantErr)
+		gotSnapshotid, gotRevision, gotErr := tt.self.info(tt.p)
+		if tt.wantErr {
+			assert.NotNil(t, gotErr, name)
+			continue
+		}
+		if assert.Nil(t, gotErr) {
+			assert.Equal(t, tt.wantSnapshotid, gotSnapshotid, name)
+			assert.Equal(t, tt.wantRevision, gotRevision, name)
+		}
+
+	}
+}
+
+func TestDpfs_snapshotPath(t *testing.T) {
+	allDpfs := Dpfs{root: "snapshots"}
+	idDpfs := Dpfs{root: "snapshots/id"}
+	revDpfs := Dpfs{root: "snapshots/id/3"}
+	tests := []struct {
+		self *Dpfs
+		p    string
+		want string
+	}{
+		{&allDpfs, "/", "snapshots"},
+		{&allDpfs, "/id", "snapshots/id"},
+		{&allDpfs, "/id/3", "snapshots/id/3"},
+		{&allDpfs, "/id/3/filename.txt", "snapshots/id/3/filename.txt"},
+		{&allDpfs, "snapshots", "snapshots"},
+		{&allDpfs, "snapshots/id", "snapshots/id"},
+		{&allDpfs, "snapshots/id/3", "snapshots/id/3"},
+		{&allDpfs, "snapshots/id/3/filename.txt", "snapshots/id/3/filename.txt"},
+		{&idDpfs, "/", "snapshots/id"},
+		{&idDpfs, "/3", "snapshots/id/3"},
+		{&idDpfs, "/3/filename.txt", "snapshots/id/3/filename.txt"},
+		{&idDpfs, "snapshots/id", "snapshots/id"},
+		{&idDpfs, "snapshots/id/3", "snapshots/id/3"},
+		{&idDpfs, "snapshots/id/3/filename.txt", "snapshots/id/3/filename.txt"},
+		{&revDpfs, "/", "snapshots/id/3"},
+		{&revDpfs, "/filename.txt", "snapshots/id/3/filename.txt"},
+		{&revDpfs, "snapshots/id/3", "snapshots/id/3"},
+		{&revDpfs, "snapshots/id/3/filename.txt", "snapshots/id/3/filename.txt"},
+	}
+	for _, tt := range tests {
+		got := tt.self.snapshotPath(tt.p)
+		assert.Equal(t, tt.want, got)
+	}
+}

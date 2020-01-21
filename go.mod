@@ -14,8 +14,11 @@ require (
 	github.com/gilbertchen/duplicacy v2.3.0+incompatible
 	github.com/gilbertchen/go-dropbox v0.0.0-20160206021034-90711b603312 // indirect
 	github.com/gilbertchen/go-ole v1.2.0 // indirect
+	github.com/gilbertchen/go.dbus v0.0.0-20190607191240-8591994fa32f // indirect
 	github.com/gilbertchen/goamz v0.0.0-20170712012135-eada9f4e8cc2 // indirect
 	github.com/gilbertchen/gopass v0.0.0-20170109162249-bf9dde6d0d2c // indirect
+	github.com/gilbertchen/keyring v0.0.0-20170923175943-8855f5632086 // indirect
+	github.com/gilbertchen/xattr v0.0.0-20160926155429-68e7a6806b01 // indirect
 	github.com/marstr/guid v1.1.0 // indirect
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
 	github.com/ncw/swift v1.0.49 // indirect
