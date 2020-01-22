@@ -26,7 +26,7 @@ func (self *Dpfs) Readdir(path string,
 
 	logger := log.WithField("path", path).WithField("sp", sp).WithField("op", "Readdir").WithField("uuid", id)
 
-	snapshotid, revision, err := self.info(sp)
+	snapshotid, revision, _, err := self.info(sp)
 	if err != nil {
 		logger.WithError(err).WithField("errc", -fuse.ENOSYS).Warning("error listing files")
 		return -fuse.ENOSYS
@@ -45,7 +45,17 @@ func (self *Dpfs) Readdir(path string,
 		}
 		snaplogger.Debug("loop")
 		for _, v := range files {
-			snaplogger.Debug("%s\n", v.Path)
+			slashes := strings.Count(v.Path, "/")
+			if slashes > 1 {
+				continue
+			}
+
+			if slashes == 1 && !strings.HasSuffix(v.Path, "/") {
+				continue
+			}
+
+			snaplogger.Debug(v.Path)
+			fill(strings.TrimSuffix(v.Path, "/"), nil, 0)
 		}
 		snaplogger.Debug("done")
 		return 0
@@ -76,21 +86,24 @@ func (self *Dpfs) getRevisionFiles(snapshotid string, revision int, logger *log.
 		logger = log.WithField("snapshotid", snapshotid).WithField("revision", revision)
 	}
 
-	logger.WithField("call", "CreateSnapshotManager").Debug()
-	manager := duplicacy.CreateSnapshotManager(self.config, self.storage)
+	logger.WithField("call", "CreateBackupManager").Debug()
+	manager := duplicacy.CreateBackupManager(snapshotid, self.storage, self.repository, self.password, self.preference.NobackupFile, self.preference.FiltersFile)
 	if manager == nil {
-		logger.WithField("call", "CreateSnapshotManager").Warning("manager was nil")
+		logger.WithField("call", "CreateBackupManager").Warning("manager was nil")
 		return nil, fmt.Errorf("manager was nil")
 	}
+	logger.WithField("call", "SetupSnapshotCache").Debug()
+	manager.SetupSnapshotCache(self.preference.Name)
 	logger.WithField("call", "DownloadSnapshot").Debug("before")
-	snap := manager.DownloadSnapshot(snapshotid, revision)
+	snap := manager.SnapshotManager.DownloadSnapshot(snapshotid, revision)
 	logger.WithField("call", "DownloadSnapshot").Debug("after")
 	if snap == nil {
 		logger.WithField("call", "DownloadSnapshot").Warning("snap was nil")
 		return nil, fmt.Errorf("snap was nil")
 	}
 	logger.WithField("call", "DownloadSnapshotContents").Debug()
-	manager.DownloadSnapshotContents(snap, []string{}, true)
+	patterns := []string{}
+	manager.SnapshotManager.DownloadSnapshotContents(snap, patterns, true)
 	if snap == nil {
 		logger.WithField("call", "DownloadSnapshotContents").Warning("snap is still nil")
 		return nil, fmt.Errorf("snap is still nil")

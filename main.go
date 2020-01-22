@@ -21,10 +21,13 @@ const (
 // Dpfs is the Duplicacy filesystem type
 type Dpfs struct {
 	fuse.FileSystemBase
-	config  *duplicacy.Config
-	storage duplicacy.Storage
-	lock    sync.RWMutex
-	root    string
+	config     *duplicacy.Config
+	storage    duplicacy.Storage
+	lock       sync.RWMutex
+	root       string
+	password   string
+	preference *duplicacy.Preference
+	repository string
 }
 
 func NewDuplicacyfs() *Dpfs {
@@ -47,7 +50,10 @@ func (self *Dpfs) Init() {
 
 	// Set defaults if unspecified
 	if repository == "" {
-		repository = "."
+		repository, err = os.Getwd()
+		if err != nil {
+			log.WithError(err).Fatal("could not get current dir")
+		}
 	}
 
 	if storageName == "" {
@@ -61,24 +67,24 @@ func (self *Dpfs) Init() {
 	preferencePath := duplicacy.GetDuplicacyPreferencePath()
 	duplicacy.SetKeyringFile(path.Join(preferencePath, "keyring"))
 
-	preference := duplicacy.FindPreference(storageName)
-	if preference == nil {
+	self.preference = duplicacy.FindPreference(storageName)
+	if self.preference == nil {
 		log.WithField("storageName", storageName).Fatal("storage not found")
 	}
 
-	self.storage = duplicacy.CreateStorage(*preference, false, 1)
+	self.storage = duplicacy.CreateStorage(*self.preference, false, 1)
 	if self.storage == nil {
 		log.WithField("storageName", storageName).Fatal("could not create storage")
 	}
 
-	if preference.Encrypted && storagePassword == "" {
+	if self.preference.Encrypted && storagePassword == "" {
 		log.WithField("storageName", storageName).Fatal("storage is encrypted but no password provided")
 	}
 
 	if all {
 		self.root = "snapshots"
 	} else {
-		self.root = path.Join("snapshots", preference.SnapshotID)
+		self.root = path.Join("snapshots", self.preference.SnapshotID)
 	}
 
 	config, _, err := duplicacy.DownloadConfig(self.storage, storagePassword)
@@ -90,7 +96,9 @@ func (self *Dpfs) Init() {
 		log.WithField("storageName", storageName).Fatal("storage is not configured")
 	}
 
+	self.password = storagePassword
 	self.config = config
+	self.repository = repository
 }
 
 func (self *Dpfs) Open(path string, flags int) (errc int, fh uint64) {
@@ -186,7 +194,7 @@ func (self *Dpfs) revision(p string) (revision string) {
 	return slice[1]
 }
 
-func (self *Dpfs) info(p string) (snapshotid string, revision int, err error) {
+func (self *Dpfs) info(p string) (snapshotid string, revision int, path string, err error) {
 	self.lock.RLock()
 	defer self.lock.RUnlock()
 
@@ -202,6 +210,7 @@ func (self *Dpfs) info(p string) (snapshotid string, revision int, err error) {
 	default:
 		snapshotid = v[1]
 		revision, err = strconv.Atoi(v[2])
+		path = strings.Join(v[3:], "/")
 	}
 
 	return
