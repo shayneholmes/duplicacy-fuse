@@ -27,6 +27,7 @@ type Dpfs struct {
 	password   string
 	preference *duplicacy.Preference
 	repository string
+	files      sync.Map
 }
 
 func NewDuplicacyfs() *Dpfs {
@@ -87,7 +88,11 @@ func (self *Dpfs) info(p string) (snapshotid string, revision int, path string, 
 	self.lock.RLock()
 	defer self.lock.RUnlock()
 
-	switch v := strings.Split(self.snapshotPath(p), "/"); len(v) {
+	if !strings.HasPrefix(p, "snapshots") {
+		p = self.snapshotPath(p)
+	}
+
+	switch v := strings.Split(p, "/"); len(v) {
 	case 0:
 		err = fmt.Errorf("invalid path")
 	case 1:
