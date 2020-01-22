@@ -10,7 +10,6 @@ import (
 
 	"github.com/billziss-gh/cgofuse/fuse"
 	duplicacy "github.com/gilbertchen/duplicacy/src"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -35,72 +34,6 @@ func NewDuplicacyfs() *Dpfs {
 	return &self
 }
 
-func (self *Dpfs) Init() {
-	var repository, storageName, storagePassword string
-	var snapshot int
-	var all bool
-
-	self.lock.Lock()
-	defer self.lock.Unlock()
-
-	_, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%d password=%s all", &repository, &storageName, &snapshot, &storagePassword, &all)
-	if err != nil {
-		log.WithError(err).Fatal("arg error")
-	}
-
-	// Set defaults if unspecified
-	if repository == "" {
-		repository, err = os.Getwd()
-		if err != nil {
-			log.WithError(err).Fatal("could not get current dir")
-		}
-	}
-
-	if storageName == "" {
-		storageName = "default"
-	}
-
-	if !duplicacy.LoadPreferences(repository) {
-		log.WithField("repository", repository).Fatal("problem loading preferences")
-	}
-
-	preferencePath := duplicacy.GetDuplicacyPreferencePath()
-	duplicacy.SetKeyringFile(path.Join(preferencePath, "keyring"))
-
-	self.preference = duplicacy.FindPreference(storageName)
-	if self.preference == nil {
-		log.WithField("storageName", storageName).Fatal("storage not found")
-	}
-
-	self.storage = duplicacy.CreateStorage(*self.preference, false, 1)
-	if self.storage == nil {
-		log.WithField("storageName", storageName).Fatal("could not create storage")
-	}
-
-	if self.preference.Encrypted && storagePassword == "" {
-		log.WithField("storageName", storageName).Fatal("storage is encrypted but no password provided")
-	}
-
-	if all {
-		self.root = "snapshots"
-	} else {
-		self.root = path.Join("snapshots", self.preference.SnapshotID)
-	}
-
-	config, _, err := duplicacy.DownloadConfig(self.storage, storagePassword)
-	if err != nil {
-		log.WithField("storageName", storageName).WithError(err).Fatal("failed to download config from storage")
-	}
-
-	if config == nil {
-		log.WithField("storageName", storageName).Fatal("storage is not configured")
-	}
-
-	self.password = storagePassword
-	self.config = config
-	self.repository = repository
-}
-
 func (self *Dpfs) Open(path string, flags int) (errc int, fh uint64) {
 	switch path {
 	case "/hello":
@@ -108,47 +41,6 @@ func (self *Dpfs) Open(path string, flags int) (errc int, fh uint64) {
 	default:
 		return -fuse.ENOENT, ^uint64(0)
 	}
-}
-
-func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
-	sp := self.snapshotPath(path)
-	id := uuid.NewV4().String()
-	logger := log.WithField("path", path).WithField("sp", sp).WithField("op", "Getattr").WithField("uuid", id)
-	logger.Debug()
-
-	// handle root and first level
-	if strings.Count(sp, "/") <= 2 {
-		logger.WithField("errc", 0).Debug("is root or first level")
-		stat.Mode = fuse.S_IFDIR | 0555
-		return 0
-	}
-
-	self.lock.RLock()
-	defer self.lock.RUnlock()
-
-	// get file info
-	exists, isDir, size, err := self.storage.GetFileInfo(0, sp)
-	if err != nil {
-		logger.WithError(err).WithField("errc", -fuse.ENOSYS).Debug()
-		return -fuse.ENOSYS
-	}
-
-	if !exists {
-		logger.WithField("errc", -fuse.ENOENT).Debug("does not exist")
-		return -fuse.ENOENT
-	}
-
-	if isDir {
-		logger.Debug("directory")
-		stat.Mode = fuse.S_IFDIR | 0555
-	} else {
-		logger.WithField("size", size).Debug("file")
-		stat.Mode = fuse.S_IFREG | 0444
-		stat.Size = size
-	}
-
-	logger.WithField("errc", 0).Debug("end")
-	return 0
 }
 
 func (self *Dpfs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
@@ -166,9 +58,6 @@ func (self *Dpfs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) 
 func (self *Dpfs) snapshotPath(p string) string {
 	self.lock.RLock()
 	defer self.lock.RUnlock()
-	if strings.HasPrefix(p, self.root) {
-		return p
-	}
 
 	return strings.TrimSuffix(path.Join(self.root, p), "/")
 }
