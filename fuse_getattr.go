@@ -40,7 +40,7 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 	}
 
 	for _, v := range files {
-		if p == v.Path {
+		if p == v.Path || p+"/" == v.Path {
 			logger.Debug("found")
 			if v.IsDir() {
 				logger.Debug("directory")
