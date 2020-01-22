@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/billziss-gh/cgofuse/fuse"
@@ -45,18 +47,18 @@ func (self *Dpfs) Readdir(path string,
 		}
 
 		snaplogger.Debug("loop")
+
+		// Regex to match current dir and files but not within subdirs
+		match := fmt.Sprintf("^%s/?$|^%s/[^/]*/?$", sp, sp)
+		regex := regexp.MustCompile(match)
 		for _, v := range files {
-			slashes := strings.Count(v.Path, "/")
-			if slashes > 1 {
-				continue
+			thisPath := fmt.Sprintf("%s/%s", sp, v.Path)
+			snaplogger.WithField("thisPath", thisPath).WithField("match", match).Debug()
+			if regex.MatchString(thisPath) {
+				// Found a match so do fill of dir entry
+				snaplogger.Debug(v.Path)
+				fill(strings.TrimSuffix(v.Path, "/"), nil, 0)
 			}
-
-			if slashes == 1 && !strings.HasSuffix(v.Path, "/") {
-				continue
-			}
-
-			snaplogger.Debug(v.Path)
-			fill(strings.TrimSuffix(v.Path, "/"), nil, 0)
 		}
 		snaplogger.Debug("done")
 		return 0
