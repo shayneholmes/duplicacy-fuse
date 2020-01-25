@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -82,32 +80,6 @@ func (self *Dpfs) revision(p string) (revision string) {
 	}
 
 	return slice[1]
-}
-
-func (self *Dpfs) info(p string) (snapshotid string, revision int, path string, err error) {
-	self.lock.RLock()
-	defer self.lock.RUnlock()
-
-	if !strings.HasPrefix(p, "snapshots") {
-		p = self.snapshotPath(p)
-	}
-
-	switch v := strings.Split(p, "/"); len(v) {
-	case 0:
-		err = fmt.Errorf("invalid path")
-	case 1:
-		snapshotid = ""
-		revision = 0
-	case 2:
-		snapshotid = v[1]
-		revision = 0
-	default:
-		snapshotid = v[1]
-		revision, err = strconv.Atoi(v[2])
-		path = strings.Join(v[3:], "/")
-	}
-
-	return
 }
 
 func main() {

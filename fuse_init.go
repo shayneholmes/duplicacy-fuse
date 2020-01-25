@@ -61,6 +61,8 @@ func (self *Dpfs) Init() {
 		self.root = path.Join("snapshots", self.preference.SnapshotID)
 	}
 
+	log.WithField("root", self.root).Debug()
+
 	config, _, err := duplicacy.DownloadConfig(self.storage, storagePassword)
 	if err != nil {
 		log.WithField("storageName", storageName).WithError(err).Fatal("failed to download config from storage")

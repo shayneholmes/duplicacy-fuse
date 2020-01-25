@@ -10,38 +10,42 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 	self.lock.RLock()
 	defer self.lock.RUnlock()
 
+	if path == "/desktop.ini" ||
+		path == "/folder.jpg" ||
+		path == "/folder.gif" {
+		return -fuse.ENOSYS
+	}
+
 	sp := self.snapshotPath(path)
 	id := uuid.NewV4().String()
 	logger := log.WithField("path", path).WithField("sp", sp).WithField("op", "Getattr").WithField("uuid", id)
-	logger.Debug()
 
 	snapshotid, revision, p, err := self.info(path)
 	if err != nil {
-		logger.WithError(err).WithField("errc", -fuse.ENOSYS).Debug()
+		logger.WithError(err).Debug()
 		return -fuse.ENOSYS
 	}
-	logger.WithFields(log.Fields{
+	logger = logger.WithFields(log.Fields{
 		"snapshotid": snapshotid,
 		"revision":   revision,
 		"p":          p,
-	}).Debug()
+	})
 
 	// handle root and first level
 	if p == "" {
-		logger.WithField("errc", 0).Debug("is root or first level")
+		logger.Debug("is root or first level")
 		stat.Mode = fuse.S_IFDIR | 0555
 		return 0
 	}
 
 	files, err := self.getRevisionFiles(snapshotid, revision, logger)
 	if err != nil {
-		logger.WithError(err).WithField("errc", -fuse.ENOSYS).Debug()
+		logger.WithError(err).Debug()
 		return -fuse.ENOSYS
 	}
 
 	for _, v := range files {
 		if p == v.Path || p+"/" == v.Path {
-			logger.Debug("found")
 			if v.IsDir() {
 				logger.Debug("directory")
 				stat.Mode = fuse.S_IFDIR | 0555
@@ -54,6 +58,5 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 		}
 	}
 
-	logger.WithField("errc", 0).Debug("end")
 	return 0
 }
