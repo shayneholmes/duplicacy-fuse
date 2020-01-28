@@ -26,6 +26,7 @@ type Dpfs struct {
 	preference *duplicacy.Preference
 	repository string
 	files      sync.Map
+	flock      sync.RWMutex
 }
 
 func NewDuplicacyfs() *Dpfs {
@@ -83,9 +84,6 @@ func (self *Dpfs) revision(p string) (revision string) {
 }
 
 func main() {
-	// debug while in dev
-	log.SetLevel(log.DebugLevel)
-
 	if len(os.Args) <= 1 {
 		log.Fatal("missing mountpoint")
 	}

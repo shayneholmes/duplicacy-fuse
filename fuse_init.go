@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path"
+	"time"
 
 	"github.com/billziss-gh/cgofuse/fuse"
 	duplicacy "github.com/gilbertchen/duplicacy/src"
@@ -12,14 +13,19 @@ import (
 func (self *Dpfs) Init() {
 	var repository, storageName, storagePassword string
 	var snapshot int
-	var all bool
+	var debug, all bool
 
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	_, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%d password=%s all", &repository, &storageName, &snapshot, &storagePassword, &all)
+	_, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%d password=%s debug all", &repository, &storageName, &snapshot, &storagePassword, &debug, &all)
 	if err != nil {
 		log.WithError(err).Fatal("arg error")
+	}
+
+	// enable debug if arg set
+	if debug {
+		log.SetLevel(log.DebugLevel)
 	}
 
 	// Set defaults if unspecified
@@ -75,4 +81,6 @@ func (self *Dpfs) Init() {
 	self.password = storagePassword
 	self.config = config
 	self.repository = repository
+
+	go self.cleanReaddirCache(time.Minute * 2)
 }
