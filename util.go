@@ -16,17 +16,9 @@ type readdirCache struct {
 	ts    time.Time
 }
 
-func (self *Dpfs) getRevisionFiles(snapshotid string, revision int, logger *log.Entry) ([]*duplicacy.Entry, error) {
+func (self *Dpfs) getRevisionFiles(snapshotid string, revision int) ([]*duplicacy.Entry, error) {
 	self.lock.RLock()
 	defer self.lock.RUnlock()
-
-	if logger == nil {
-		logger = log.WithFields(
-			log.Fields{
-				"snapshotid": snapshotid,
-				"revision":   revision,
-			})
-	}
 
 	// Check for cached list of files
 	key := fmt.Sprintf("%s_%d", snapshotid, revision)
@@ -43,27 +35,14 @@ func (self *Dpfs) getRevisionFiles(snapshotid string, revision int, logger *log.
 		return cache.files, nil
 	}
 
-	// Lock so only one BackupManager is acting at once
-	self.flock.Lock()
-	defer self.flock.Unlock()
-
 	// Retrieve files
-	manager := duplicacy.CreateBackupManager(snapshotid, self.storage, self.repository, self.password, self.preference.NobackupFile, self.preference.FiltersFile)
-	if manager == nil {
-		logger.WithField("call", "CreateBackupManager").Warning("manager was nil")
-		return nil, fmt.Errorf("manager was nil")
+	manager, err := self.CreateBackupManager(snapshotid)
+	if err != nil {
+		return nil, fmt.Errorf("problem creating manager: %w", err)
 	}
-	manager.SetupSnapshotCache(self.preference.Name)
-	snap := manager.SnapshotManager.DownloadSnapshot(snapshotid, revision)
-	if snap == nil {
-		logger.WithField("call", "DownloadSnapshot").Warning("snap was nil")
-		return nil, fmt.Errorf("snap was nil")
-	}
-	patterns := []string{}
-	manager.SnapshotManager.DownloadSnapshotContents(snap, patterns, true)
-	if snap == nil {
-		logger.WithField("call", "DownloadSnapshotContents").Warning("snap is still nil")
-		return nil, fmt.Errorf("snap is still nil")
+	snap, err := self.DownloadSnapshot(manager, snapshotid, revision, nil)
+	if err != nil {
+		return nil, fmt.Errorf("problem dowloading snapshot: %w", err)
 	}
 
 	// Store for later
@@ -73,6 +52,48 @@ func (self *Dpfs) getRevisionFiles(snapshotid string, revision int, logger *log.
 	})
 
 	return snap.Files, nil
+}
+
+func (self *Dpfs) getRevisionFile(snapshotid string, revision int, file string, logger *log.Entry) (buf []byte, err error) {
+	/* self.lock.RLock()
+	defer self.lock.RUnlock()
+
+	if logger == nil {
+		logger = log.WithFields(
+			log.Fields{
+				"snapshotid": snapshotid,
+				"revision":   revision,
+			})
+	} */
+	return
+}
+
+func (self *Dpfs) snapshotPath(p string) string {
+	self.lock.RLock()
+	defer self.lock.RUnlock()
+
+	return strings.TrimSuffix(path.Join(self.root, p), "/")
+}
+
+func (self *Dpfs) revision(p string) (revision string) {
+	self.lock.RLock()
+	defer self.lock.RUnlock()
+
+	slice := strings.Split(p, "/")
+
+	if len(slice) < 2 {
+		return ""
+	}
+
+	if self.root == "snapshots" {
+		if len(slice) < 3 {
+			return ""
+		} else {
+			return slice[2]
+		}
+	}
+
+	return slice[1]
 }
 
 func (self *Dpfs) abs(filepath string, snapshotid string, revision int) (absolutepath string) {
@@ -121,7 +142,6 @@ func (self *Dpfs) info(p string) (snapshotid string, revision int, path string, 
 }
 
 func (self *Dpfs) cleanReaddirCache(age time.Duration) {
-
 	for {
 		// wait for timer to expire
 		time.Sleep(time.Second * 30)
@@ -146,4 +166,41 @@ func (self *Dpfs) cleanReaddirCache(age time.Duration) {
 			return true
 		})
 	}
+}
+
+func (self *Dpfs) CreateBackupManager(snapshotid string) (*duplicacy.BackupManager, error) {
+	manager := duplicacy.CreateBackupManager(snapshotid, self.storage, self.repository, self.password, self.preference.NobackupFile, self.preference.FiltersFile)
+	if manager == nil {
+		return nil, fmt.Errorf("manager was nil")
+	}
+	if !manager.SetupSnapshotCache(self.preference.Name) {
+		return nil, fmt.Errorf("SetupSnapshotCache was false")
+	}
+
+	return manager, nil
+}
+
+func (self *Dpfs) DownloadSnapshot(manager *duplicacy.BackupManager, snapshotid string, revision int, patterns []string) (*duplicacy.Snapshot, error) {
+	// Lock so only one DownloadSnapshot is acting at once
+	self.flock.Lock()
+	defer self.flock.Unlock()
+
+	snap := manager.SnapshotManager.DownloadSnapshot(snapshotid, revision)
+	if snap == nil {
+		return nil, fmt.Errorf("snap was nil")
+	}
+	if !manager.SnapshotManager.DownloadSnapshotContents(snap, patterns, true) {
+		return nil, fmt.Errorf("DownloadSnapshotContents was false")
+	}
+
+	return snap, nil
+}
+
+func (self *Dpfs) FindFile(filepath string, files []*duplicacy.Entry) (*duplicacy.Entry, error) {
+	for _, entry := range files {
+		if filepath == entry.Path || filepath+"/" == entry.Path {
+			return entry, nil
+		}
+	}
+	return nil, fmt.Errorf("file not found")
 }

@@ -11,14 +11,14 @@ import (
 )
 
 func (self *Dpfs) Init() {
-	var repository, storageName, storagePassword string
+	var repository, storageName, storagePassword, loglevel string
 	var snapshot int
 	var debug, all bool
 
 	self.lock.Lock()
 	defer self.lock.Unlock()
 
-	_, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%d password=%s debug all", &repository, &storageName, &snapshot, &storagePassword, &debug, &all)
+	_, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%d password=%s loglevel=%s debug all", &repository, &storageName, &snapshot, &storagePassword, &loglevel, &debug, &all)
 	if err != nil {
 		log.WithError(err).Fatal("arg error")
 	}
@@ -26,6 +26,15 @@ func (self *Dpfs) Init() {
 	// enable debug if arg set
 	if debug {
 		log.SetLevel(log.DebugLevel)
+	} else {
+		switch loglevel {
+		case "debug":
+			log.SetLevel(log.DebugLevel)
+		case "warn":
+			log.SetLevel(log.WarnLevel)
+		case "info":
+			log.SetLevel(log.InfoLevel)
+		}
 	}
 
 	// Set defaults if unspecified
@@ -81,6 +90,7 @@ func (self *Dpfs) Init() {
 	self.password = storagePassword
 	self.config = config
 	self.repository = repository
+	self.ofiles = make(map[uint64]node_t)
 
 	go self.cleanReaddirCache(time.Minute * 2)
 }

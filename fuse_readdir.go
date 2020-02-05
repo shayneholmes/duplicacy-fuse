@@ -39,7 +39,7 @@ func (self *Dpfs) Readdir(path string,
 		snaplogger := logger.WithField("snapshotid", snapshotid).WithField("revision", revision)
 		snaplogger.WithField("call", "CreateSnapshotManager").Debug()
 
-		files, err := self.getRevisionFiles(snapshotid, revision, snaplogger)
+		files, err := self.getRevisionFiles(snapshotid, revision)
 		if err != nil {
 			snaplogger.WithError(err).Debug()
 			return 0
@@ -56,11 +56,12 @@ func (self *Dpfs) Readdir(path string,
 				"thisPath": thisPath,
 				"match":    match,
 			})
-			snaplogger.Debug()
+			// snaplogger.Debug()
 			if regex.MatchString(thisPath) {
 				// Found a match so do fill of dir entry
-				snaplogger.Debug("matched")
-				fill(strings.TrimPrefix(strings.TrimSuffix(thisPath, "/"), sp+"/"), nil, 0)
+				pathname := strings.TrimPrefix(strings.TrimSuffix(thisPath, "/"), sp+"/")
+				snaplogger.WithField("pathname", pathname).Debug("matched")
+				fill(pathname, nil, 0)
 			}
 		}
 		return 0
