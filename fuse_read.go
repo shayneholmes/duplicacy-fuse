@@ -6,23 +6,21 @@ import (
 )
 
 func (self *Dpfs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
-	self.lock.RLock()
-	defer self.lock.RUnlock()
+	log.SetLevel(log.DebugLevel)
+	defer log.SetLevel(log.InfoLevel)
 
-	sp := self.snapshotPath(path)
-	id := uuid.NewV4().String()
-	logger := log.WithField("path", path).WithField("sp", sp).WithField("op", "Open").WithField("uuid", id)
+	logger := log.WithFields(
+		log.Fields{
+			"op":   "Read",
+			"path": path,
+			"id":   uuid.NewV4().String(),
+		})
 
 	snapshotid, revision, p, err := self.info(path)
 	if err != nil {
 		logger.WithError(err).Debug()
 		return 0
 	}
-	logger = logger.WithFields(log.Fields{
-		"snapshotid": snapshotid,
-		"revision":   revision,
-		"p":          p,
-	})
 
 	files, err := self.getRevisionFiles(snapshotid, revision)
 	if err != nil {
@@ -30,20 +28,39 @@ func (self *Dpfs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) 
 		return 0
 	}
 
-	_, err = self.FindFile(path, files)
+	entry, err := self.findFile(p, files)
 	if err != nil {
+		logger.WithError(err).Debug()
 		return 0
 	}
 
-	// not sure what to do from here...
-
-	/* endofst := ofst + int64(len(buff))
-	if endofst > int64(len(contents)) {
-		endofst = int64(len(contents))
-	}
-	if endofst < ofst {
+	manager, err := self.createBackupManager(snapshotid)
+	if err != nil {
+		logger.WithError(err).Debug()
 		return 0
 	}
-	n = copy(buff, contents[ofst:endofst]) */
+
+	snap, err := self.downloadSnapshot(manager, snapshotid, revision, nil)
+	if err != nil {
+		logger.WithError(err).Debug()
+		return 0
+	}
+
+	if !manager.SnapshotManager.RetrieveFile(snap, entry, func(chunck []byte) {
+		endofst := ofst + int64(len(buff))
+		if endofst > int64(len(chunck)) {
+			endofst = int64(len(chunck))
+		}
+		if endofst < ofst {
+			n = 0
+			return
+		}
+		n = copy(buff, chunck[ofst:endofst])
+	}) {
+		return 0
+	}
+
+	logger.WithField("n", n).Debug()
+
 	return
 }

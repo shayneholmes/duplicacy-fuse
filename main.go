@@ -21,16 +21,14 @@ type Dpfs struct {
 	repository string
 	files      sync.Map
 	flock      sync.RWMutex
-	ino        uint64
-	ofiles     map[uint64]node_t
+	//	ofiles     map[uint64]node_t
 }
 
-type node_t struct {
+/* type node_t struct {
 	snapshotid string
 	revision   int
 	path       string
-	opencnt    int
-}
+} */
 
 func NewDuplicacyfs() *Dpfs {
 	self := Dpfs{}

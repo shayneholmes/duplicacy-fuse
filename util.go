@@ -36,11 +36,11 @@ func (self *Dpfs) getRevisionFiles(snapshotid string, revision int) ([]*duplicac
 	}
 
 	// Retrieve files
-	manager, err := self.CreateBackupManager(snapshotid)
+	manager, err := self.createBackupManager(snapshotid)
 	if err != nil {
 		return nil, fmt.Errorf("problem creating manager: %w", err)
 	}
-	snap, err := self.DownloadSnapshot(manager, snapshotid, revision, nil)
+	snap, err := self.downloadSnapshot(manager, snapshotid, revision, nil)
 	if err != nil {
 		return nil, fmt.Errorf("problem dowloading snapshot: %w", err)
 	}
@@ -168,7 +168,7 @@ func (self *Dpfs) cleanReaddirCache(age time.Duration) {
 	}
 }
 
-func (self *Dpfs) CreateBackupManager(snapshotid string) (*duplicacy.BackupManager, error) {
+func (self *Dpfs) createBackupManager(snapshotid string) (*duplicacy.BackupManager, error) {
 	manager := duplicacy.CreateBackupManager(snapshotid, self.storage, self.repository, self.password, self.preference.NobackupFile, self.preference.FiltersFile)
 	if manager == nil {
 		return nil, fmt.Errorf("manager was nil")
@@ -180,7 +180,7 @@ func (self *Dpfs) CreateBackupManager(snapshotid string) (*duplicacy.BackupManag
 	return manager, nil
 }
 
-func (self *Dpfs) DownloadSnapshot(manager *duplicacy.BackupManager, snapshotid string, revision int, patterns []string) (*duplicacy.Snapshot, error) {
+func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid string, revision int, patterns []string) (*duplicacy.Snapshot, error) {
 	// Lock so only one DownloadSnapshot is acting at once
 	self.flock.Lock()
 	defer self.flock.Unlock()
@@ -196,7 +196,7 @@ func (self *Dpfs) DownloadSnapshot(manager *duplicacy.BackupManager, snapshotid 
 	return snap, nil
 }
 
-func (self *Dpfs) FindFile(filepath string, files []*duplicacy.Entry) (*duplicacy.Entry, error) {
+func (self *Dpfs) findFile(filepath string, files []*duplicacy.Entry) (*duplicacy.Entry, error) {
 	for _, entry := range files {
 		if filepath == entry.Path || filepath+"/" == entry.Path {
 			return entry, nil

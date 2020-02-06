@@ -90,7 +90,7 @@ func (self *Dpfs) Init() {
 	self.password = storagePassword
 	self.config = config
 	self.repository = repository
-	self.ofiles = make(map[uint64]node_t)
+	//	self.ofiles = make(map[uint64]node_t)
 
 	go self.cleanReaddirCache(time.Minute * 2)
 }

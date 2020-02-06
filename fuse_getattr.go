@@ -18,9 +18,11 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 		return -fuse.ENOSYS
 	}
 
-	sp := self.snapshotPath(path)
-	id := uuid.NewV4().String()
-	logger := log.WithField("path", path).WithField("sp", sp).WithField("op", "Getattr").WithField("uuid", id)
+	logger := log.WithFields(log.Fields{
+		"path": path,
+		"op":   "Getattr",
+		"uuid": uuid.NewV4().String(),
+	})
 
 	snapshotid, revision, p, err := self.info(path)
 	if err != nil {
@@ -31,6 +33,7 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 		"snapshotid": snapshotid,
 		"revision":   revision,
 		"p":          p,
+		"id":         uuid.NewV4().String(),
 	})
 
 	// handle root and first level
@@ -47,7 +50,7 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 	}
 
 	startts := time.Now()
-	entry, err := self.FindFile(p, files)
+	entry, err := self.findFile(p, files)
 	logger.WithField("loop time", time.Since(startts).String()).Debug()
 	if err != nil {
 		return -fuse.ENOENT
