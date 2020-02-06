@@ -1,5 +1,7 @@
 # duplicacy-fuse
 
+## Overview
+
 This is my first effort at implementing a file system in userspace.
 
 ## Purpose
@@ -18,9 +20,9 @@ On Linux you will need fuse support and on Windows you need ... installed.
 
 ## Usage
 
-'''sh
+```sh
 duplicacy-fuse <mount point> [options]
-'''
+```
 
 ### Options
 
