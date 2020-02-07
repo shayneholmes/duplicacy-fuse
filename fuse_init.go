@@ -11,14 +11,11 @@ import (
 )
 
 func (self *Dpfs) Init() {
-	var repository, storageName, storagePassword, loglevel string
-	var snapshot int
+	var repository, snapshotid, storageName, storagePassword, loglevel string
+	var revision int
 	var debug, all bool
 
-	self.lock.Lock()
-	defer self.lock.Unlock()
-
-	_, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%d password=%s loglevel=%s debug all", &repository, &storageName, &snapshot, &storagePassword, &loglevel, &debug, &all)
+	_, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%s revision=%d password=%s loglevel=%s debug all", &repository, &storageName, &snapshotid, &revision, &storagePassword, &loglevel, &debug, &all)
 	if err != nil {
 		log.WithError(err).Fatal("arg error")
 	}
@@ -49,6 +46,14 @@ func (self *Dpfs) Init() {
 		storageName = "default"
 	}
 
+	if all && snapshotid != "" {
+		log.Fatal("cannot use all and snapshotid at the same time")
+	}
+
+	if snapshotid == "" && revision != 0 {
+		log.Fatal("cannot specify a revision without a snapshot id")
+	}
+
 	if !duplicacy.LoadPreferences(repository) {
 		log.WithField("repository", repository).Fatal("problem loading preferences")
 	}
@@ -70,10 +75,14 @@ func (self *Dpfs) Init() {
 		log.WithField("storageName", storageName).Fatal("storage is encrypted but no password provided")
 	}
 
-	if all {
-		self.root = "snapshots"
-	} else {
-		self.root = path.Join("snapshots", self.preference.SnapshotID)
+	self.root = "snapshots"
+
+	if snapshotid != "" {
+		self.snapshotid = self.preference.SnapshotID
+	}
+
+	if revision != 0 {
+		self.revision = revision
 	}
 
 	log.WithField("root", self.root).Debug()
@@ -90,7 +99,6 @@ func (self *Dpfs) Init() {
 	self.password = storagePassword
 	self.config = config
 	self.repository = repository
-	//	self.ofiles = make(map[uint64]node_t)
 
 	go self.cleanReaddirCache(time.Minute * 2)
 }

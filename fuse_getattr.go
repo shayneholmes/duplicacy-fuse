@@ -9,9 +9,6 @@ import (
 )
 
 func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
-	self.lock.RLock()
-	defer self.lock.RUnlock()
-
 	if path == "/desktop.ini" ||
 		path == "/folder.jpg" ||
 		path == "/folder.gif" {

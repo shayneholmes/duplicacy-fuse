@@ -7,6 +7,31 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestDpfs_snapshotPath(t *testing.T) {
+	allDpfs := Dpfs{root: "snapshots"}
+	idDpfs := Dpfs{root: "snapshots", snapshotid: "id"}
+	revDpfs := Dpfs{root: "snapshots", snapshotid: "id", revision: 3}
+	tests := []struct {
+		self *Dpfs
+		p    string
+		want string
+	}{
+		{&allDpfs, "/", "snapshots"},
+		{&allDpfs, "/id", "snapshots/id"},
+		{&allDpfs, "/id/3", "snapshots/id/3"},
+		{&allDpfs, "/id/3/filename.txt", "snapshots/id/3/filename.txt"},
+		{&idDpfs, "/", "snapshots/id"},
+		{&idDpfs, "/3", "snapshots/id/3"},
+		{&idDpfs, "/3/filename.txt", "snapshots/id/3/filename.txt"},
+		{&revDpfs, "/", "snapshots/id/3"},
+		{&revDpfs, "/filename.txt", "snapshots/id/3/filename.txt"},
+	}
+	for _, tt := range tests {
+		got := tt.self.snapshotPath(tt.p)
+		assert.Equal(t, tt.want, got)
+	}
+}
+
 func TestDpfs_abs(t *testing.T) {
 	type args struct {
 		filepath   string

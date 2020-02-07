@@ -16,6 +16,8 @@ type Dpfs struct {
 	storage    duplicacy.Storage
 	lock       sync.RWMutex
 	root       string
+	snapshotid string
+	revision   int
 	password   string
 	preference *duplicacy.Preference
 	repository string
@@ -23,12 +25,6 @@ type Dpfs struct {
 	flock      sync.RWMutex
 	//	ofiles     map[uint64]node_t
 }
-
-/* type node_t struct {
-	snapshotid string
-	revision   int
-	path       string
-} */
 
 func NewDuplicacyfs() *Dpfs {
 	self := Dpfs{}

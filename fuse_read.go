@@ -6,9 +6,6 @@ import (
 )
 
 func (self *Dpfs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
-	log.SetLevel(log.DebugLevel)
-	defer log.SetLevel(log.InfoLevel)
-
 	logger := log.WithFields(
 		log.Fields{
 			"op":   "Read",

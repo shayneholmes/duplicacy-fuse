@@ -54,52 +54,19 @@ func (self *Dpfs) getRevisionFiles(snapshotid string, revision int) ([]*duplicac
 	return snap.Files, nil
 }
 
-func (self *Dpfs) getRevisionFile(snapshotid string, revision int, file string, logger *log.Entry) (buf []byte, err error) {
-	/* self.lock.RLock()
-	defer self.lock.RUnlock()
-
-	if logger == nil {
-		logger = log.WithFields(
-			log.Fields{
-				"snapshotid": snapshotid,
-				"revision":   revision,
-			})
-	} */
-	return
-}
-
-func (self *Dpfs) snapshotPath(p string) string {
-	self.lock.RLock()
-	defer self.lock.RUnlock()
-
-	return strings.TrimSuffix(path.Join(self.root, p), "/")
-}
-
-func (self *Dpfs) revision(p string) (revision string) {
-	self.lock.RLock()
-	defer self.lock.RUnlock()
-
-	slice := strings.Split(p, "/")
-
-	if len(slice) < 2 {
-		return ""
+func (self *Dpfs) snapshotPath(filepath string) string {
+	if self.revision != 0 {
+		filepath = path.Join(strconv.Itoa(self.revision), filepath)
 	}
 
-	if self.root == "snapshots" {
-		if len(slice) < 3 {
-			return ""
-		} else {
-			return slice[2]
-		}
+	if self.snapshotid != "" {
+		filepath = path.Join(self.snapshotid, filepath)
 	}
 
-	return slice[1]
+	return strings.TrimSuffix(path.Join(self.root, filepath), "/")
 }
 
 func (self *Dpfs) abs(filepath string, snapshotid string, revision int) (absolutepath string) {
-	self.lock.RLock()
-	defer self.lock.RUnlock()
-
 	switch strings.Count(self.root, "/") {
 	case 0:
 		if revision == 0 {

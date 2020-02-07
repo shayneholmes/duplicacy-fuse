@@ -19,9 +19,6 @@ func (self *Dpfs) Readdir(path string,
 	fill(".", nil, 0)
 	fill("..", nil, 0)
 
-	self.lock.RLock()
-	defer self.lock.RUnlock()
-
 	id := uuid.NewV4().String()
 	sp := self.snapshotPath(path)
 

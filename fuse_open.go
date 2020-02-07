@@ -9,9 +9,6 @@ import (
 )
 
 func (self *Dpfs) Open(path string, flags int) (errc int, fh uint64) {
-	log.SetLevel(log.DebugLevel)
-	defer log.SetLevel(log.InfoLevel)
-
 	logger := log.WithFields(
 		log.Fields{
 			"op":   "Open",

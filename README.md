@@ -16,7 +16,11 @@ On Windows, it can be built with, or without CGO support using the CGO_ENABLED e
 
 ## Requirements
 
-On Linux you will need fuse support and on Windows you need ... installed.
+Check out [cgofuse](https://github.com/billziss-gh/cgofuse) for full requriments, however requirements are:
+
+* Linux : gcc, libfuse-dev
+* Windows (cgo) : [WinFsp](https://github.com/billziss-gh/winfsp), gcc
+* Windows (!cgo)  : [WinFsp](https://github.com/billziss-gh/winfsp)
 
 ## Usage
 
@@ -29,12 +33,14 @@ duplicacy-fuse <mount point> [options]
   `-o repositorty=<path>` : Path to repository. Defaults to current directory.
   
   `-o storage=<storage name>` : Remote storage to mount. Defaults to "default".
+
+  `-o password=<storage password>`: Password for the specified storage.
   
-  `-o snapshotid=<id>` : Which snapshot id to mount. Unless `all` option is specified, defaults to the repository snapshot if for the chosen storage.
+  `-o snapshot=<id>` : Which snapshot id to mount. Unless `all` option is specified, defaults to the repository snapshot if for the chosen storage.
   
   `-o revision=<number>` : Which revision to mount. Cannot be specified when the `all` is specified.
   
-  `-o all` : Display all snapshot ids for tge specified storage.
+  `-o all` : Display all snapshot ids for the specified storage.
   
 ## Status
 
