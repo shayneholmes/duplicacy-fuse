@@ -16,11 +16,19 @@ On Windows, it can be built with, or without CGO support using the CGO_ENABLED e
 
 ## Requirements
 
-Check out [cgofuse](https://github.com/billziss-gh/cgofuse) for full requriments, however requirements are:
+Check out [cgofuse](https://github.com/billziss-gh/cgofuse) for full requirements, however basics are:
 
 * Linux : gcc, libfuse-dev
 * Windows (cgo) : [WinFsp](https://github.com/billziss-gh/winfsp), gcc
 * Windows (!cgo)  : [WinFsp](https://github.com/billziss-gh/winfsp)
+
+## Building
+
+```sh
+go get -u gitlab.com/andrewheberle/duplicacy-fuse
+```
+
+Optional: To build the !cgo version on Windows, set the "CGO_ENABLED" environment variable to "0" before building.
 
 ## Usage
 
@@ -53,3 +61,11 @@ Memory use is quite high also as the listing of all files in a snapshot is loade
 Browsing files and directories is also quite inneficient as the list of files is searched every time to find matching files, so worst case N-1 entries may need to be searched to get file info for a single file.
 
 Opening files is also very slow, but this may be due to using an innefficient process to dowload file contents.
+
+## TODO
+
+* Make SFTP storage using key based authentication work
+* Make things more efficient - suggestion on the forums to cache file results from a revision in a DB (sqlite maybe)
+* Tests - Implement tests for the various fuse methods (current ones for Getattr always fail)
+* Make better :)
+* Upstream?

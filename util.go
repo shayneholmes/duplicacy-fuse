@@ -11,15 +11,75 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type pathInfo struct {
+	filepath   string
+	snapshotid string
+	revision   int
+}
+
+func (self *Dpfs) newpathInfo(filepath string) (p pathInfo) {
+	// revision and snapshotid is set so filepath is just filepath
+	if self.snapshotid != "" && self.revision != 0 {
+		p.snapshotid = self.snapshotid
+		p.revision = self.revision
+		p.filepath = filepath
+		return
+	}
+
+	// snapshotid is set so filepath may contain revision as first entry followed by filepath
+	if self.snapshotid != "" {
+		p.snapshotid = self.snapshotid
+		if split := strings.Split(filepath, "/"); len(split) > 1 {
+			if split[1] != "" {
+				p.revision, _ = strconv.Atoi(split[1])
+			}
+			if len(split) > 2 {
+				p.filepath = "/" + strings.Join(split[2:], "/")
+			}
+		}
+		return
+	}
+
+	// neither is set so filepath may contain snapshotid followed by revision followed by filepath
+	switch split := strings.Split(filepath, "/"); len(split) {
+	case 0, 1:
+		// this should not happen
+		return
+	case 2:
+		p.snapshotid = split[1]
+	case 3:
+		p.snapshotid = split[1]
+		p.revision, _ = strconv.Atoi(split[2])
+	default:
+		p.snapshotid = split[1]
+		p.revision, _ = strconv.Atoi(split[2])
+		p.filepath = "/" + strings.Join(split[3:], "/")
+	}
+
+	return
+}
+
+func (info *pathInfo) String() string {
+	if info.filepath != "" {
+		return fmt.Sprintf("snapshots/%s/%d%s", info.snapshotid, info.revision, info.filepath)
+	}
+	if info.revision != 0 {
+		return fmt.Sprintf("snapshots/%s/%d", info.snapshotid, info.revision)
+	}
+
+	if info.snapshotid != "" {
+		return fmt.Sprintf("snapshots/%s", info.snapshotid)
+
+	}
+	return "snapshots"
+}
+
 type readdirCache struct {
 	files []*duplicacy.Entry
 	ts    time.Time
 }
 
 func (self *Dpfs) getRevisionFiles(snapshotid string, revision int) ([]*duplicacy.Entry, error) {
-	self.lock.RLock()
-	defer self.lock.RUnlock()
-
 	// Check for cached list of files
 	key := fmt.Sprintf("%s_%d", snapshotid, revision)
 	if f, ok := self.files.Load(key); ok {
@@ -54,18 +114,6 @@ func (self *Dpfs) getRevisionFiles(snapshotid string, revision int) ([]*duplicac
 	return snap.Files, nil
 }
 
-func (self *Dpfs) snapshotPath(filepath string) string {
-	if self.revision != 0 {
-		filepath = path.Join(strconv.Itoa(self.revision), filepath)
-	}
-
-	if self.snapshotid != "" {
-		filepath = path.Join(self.snapshotid, filepath)
-	}
-
-	return strings.TrimSuffix(path.Join(self.root, filepath), "/")
-}
-
 func (self *Dpfs) abs(filepath string, snapshotid string, revision int) (absolutepath string) {
 	switch strings.Count(self.root, "/") {
 	case 0:
@@ -80,32 +128,6 @@ func (self *Dpfs) abs(filepath string, snapshotid string, revision int) (absolut
 		return path.Join(self.root, strconv.Itoa(revision), filepath)
 	}
 	return path.Join(self.root, filepath)
-}
-
-func (self *Dpfs) info(p string) (snapshotid string, revision int, path string, err error) {
-	self.lock.RLock()
-	defer self.lock.RUnlock()
-
-	if !strings.HasPrefix(p, "snapshots") {
-		p = self.snapshotPath(p)
-	}
-
-	switch v := strings.Split(p, "/"); len(v) {
-	case 0:
-		err = fmt.Errorf("invalid path")
-	case 1:
-		snapshotid = ""
-		revision = 0
-	case 2:
-		snapshotid = v[1]
-		revision = 0
-	default:
-		snapshotid = v[1]
-		revision, _ = strconv.Atoi(v[2])
-		path = strings.Join(v[3:], "/")
-	}
-
-	return
 }
 
 func (self *Dpfs) cleanReaddirCache(age time.Duration) {
@@ -148,10 +170,6 @@ func (self *Dpfs) createBackupManager(snapshotid string) (*duplicacy.BackupManag
 }
 
 func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid string, revision int, patterns []string) (*duplicacy.Snapshot, error) {
-	// Lock so only one DownloadSnapshot is acting at once
-	self.flock.Lock()
-	defer self.flock.Unlock()
-
 	snap := manager.SnapshotManager.DownloadSnapshot(snapshotid, revision)
 	if snap == nil {
 		return nil, fmt.Errorf("snap was nil")
@@ -164,6 +182,7 @@ func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid 
 }
 
 func (self *Dpfs) findFile(filepath string, files []*duplicacy.Entry) (*duplicacy.Entry, error) {
+	filepath = strings.TrimPrefix(filepath, "/")
 	for _, entry := range files {
 		if filepath == entry.Path || filepath+"/" == entry.Path {
 			return entry, nil

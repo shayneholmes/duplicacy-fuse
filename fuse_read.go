@@ -13,31 +13,27 @@ func (self *Dpfs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) 
 			"id":   uuid.NewV4().String(),
 		})
 
-	snapshotid, revision, p, err := self.info(path)
+	info := self.newpathInfo(path)
+
+	files, err := self.getRevisionFiles(info.snapshotid, info.revision)
 	if err != nil {
 		logger.WithError(err).Debug()
 		return 0
 	}
 
-	files, err := self.getRevisionFiles(snapshotid, revision)
+	entry, err := self.findFile(info.filepath, files)
 	if err != nil {
 		logger.WithError(err).Debug()
 		return 0
 	}
 
-	entry, err := self.findFile(p, files)
+	manager, err := self.createBackupManager(info.snapshotid)
 	if err != nil {
 		logger.WithError(err).Debug()
 		return 0
 	}
 
-	manager, err := self.createBackupManager(snapshotid)
-	if err != nil {
-		logger.WithError(err).Debug()
-		return 0
-	}
-
-	snap, err := self.downloadSnapshot(manager, snapshotid, revision, nil)
+	snap, err := self.downloadSnapshot(manager, info.snapshotid, info.revision, nil)
 	if err != nil {
 		logger.WithError(err).Debug()
 		return 0

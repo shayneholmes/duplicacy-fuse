@@ -1,55 +1,54 @@
 package main
 
 import (
-	"time"
-
 	"github.com/billziss-gh/cgofuse/fuse"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 )
 
 func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
-	if path == "/desktop.ini" ||
-		path == "/folder.jpg" ||
-		path == "/folder.gif" {
-		return -fuse.ENOSYS
-	}
-
+	info := self.newpathInfo(path)
 	logger := log.WithFields(log.Fields{
-		"path": path,
-		"op":   "Getattr",
-		"uuid": uuid.NewV4().String(),
-	})
-
-	snapshotid, revision, p, err := self.info(path)
-	if err != nil {
-		logger.WithError(err).Debug()
-		return -fuse.ENOSYS
-	}
-	logger = logger.WithFields(log.Fields{
-		"snapshotid": snapshotid,
-		"revision":   revision,
-		"p":          p,
+		"path":       path,
+		"op":         "Getattr",
+		"uuid":       uuid.NewV4().String(),
+		"snapshotid": info.snapshotid,
+		"revision":   info.revision,
+		"filepath":   info.filepath,
 		"id":         uuid.NewV4().String(),
 	})
 
+	// handle files that shouldn't exist here
+	if (info.snapshotid == "" && info.revision == 0) && 
+		(path == "/desktop.ini" ||
+		path == "/folder.jpg" ||
+		path == "/folder.gif") {
+			return -fuse.ENOENT
+	}
+
+	if (info.revision == 0) && 
+		(path == "/"+info.snapshotid+"/desktop.ini" ||
+		path == "/"+info.snapshotid+"/folder.jpg" ||
+		path == "/"+info.snapshotid+"/folder.gif") {
+			return -fuse.ENOENT
+	}
+
 	// handle root and first level
-	if p == "" {
+	if info.filepath == "" {
 		logger.Debug("is root or first level")
 		stat.Mode = fuse.S_IFDIR | 0555
 		return 0
 	}
 
-	files, err := self.getRevisionFiles(snapshotid, revision)
+	files, err := self.getRevisionFiles(info.snapshotid, info.revision)
 	if err != nil {
-		logger.WithError(err).Debug()
+		logger.WithError(err).Debug("getRevisionFiles")
 		return -fuse.ENOSYS
 	}
 
-	startts := time.Now()
-	entry, err := self.findFile(p, files)
-	logger.WithField("loop time", time.Since(startts).String()).Debug()
+	entry, err := self.findFile(info.filepath, files)
 	if err != nil {
+		logger.WithError(err).Debug("findFile")
 		return -fuse.ENOENT
 	}
 

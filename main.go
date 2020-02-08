@@ -14,7 +14,6 @@ type Dpfs struct {
 	fuse.FileSystemBase
 	config     *duplicacy.Config
 	storage    duplicacy.Storage
-	lock       sync.RWMutex
 	root       string
 	snapshotid string
 	revision   int
@@ -22,8 +21,6 @@ type Dpfs struct {
 	preference *duplicacy.Preference
 	repository string
 	files      sync.Map
-	flock      sync.RWMutex
-	//	ofiles     map[uint64]node_t
 }
 
 func NewDuplicacyfs() *Dpfs {

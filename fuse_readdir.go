@@ -19,24 +19,16 @@ func (self *Dpfs) Readdir(path string,
 	fill(".", nil, 0)
 	fill("..", nil, 0)
 
-	id := uuid.NewV4().String()
-	sp := self.snapshotPath(path)
+	info := self.newpathInfo(path)
 
-	logger := log.WithField("path", path).WithField("sp", sp).WithField("op", "Readdir").WithField("uuid", id)
-
-	// extract info from path
-	snapshotid, revision, _, err := self.info(sp)
-	if err != nil {
-		logger.WithError(err).Warning("error listing files")
-		return -fuse.ENOSYS
-	}
+	logger := log.WithField("path", path).WithField("op", "Readdir").WithField("uuid", uuid.NewV4().String())
 
 	// are we loading from a revision
-	if revision != 0 {
-		snaplogger := logger.WithField("snapshotid", snapshotid).WithField("revision", revision)
+	if info.revision != 0 {
+		snaplogger := logger.WithField("snapshotid", info.snapshotid).WithField("revision", info.revision)
 		snaplogger.WithField("call", "CreateSnapshotManager").Debug()
 
-		files, err := self.getRevisionFiles(snapshotid, revision)
+		files, err := self.getRevisionFiles(info.snapshotid, info.revision)
 		if err != nil {
 			snaplogger.WithError(err).Debug()
 			return 0
@@ -44,10 +36,10 @@ func (self *Dpfs) Readdir(path string,
 
 		// Regex to match current dir and files but not within subdirs
 		//match := fmt.Sprintf("^%s/?$|^%s/[^/]*/?$", sp, sp)
-		match := fmt.Sprintf("^%s/[^/]*/?$", sp)
+		match := fmt.Sprintf("^%s/[^/]*/?$", info.String())
 		regex := regexp.MustCompile(match)
 		for _, v := range files {
-			thisPath := self.abs(v.Path, snapshotid, revision)
+			thisPath := self.abs(v.Path, info.snapshotid, info.revision)
 			snaplogger = snaplogger.WithFields(log.Fields{
 				"v.Path":   v.Path,
 				"thisPath": thisPath,
@@ -56,7 +48,7 @@ func (self *Dpfs) Readdir(path string,
 			// snaplogger.Debug()
 			if regex.MatchString(thisPath) {
 				// Found a match so do fill of dir entry
-				pathname := strings.TrimPrefix(strings.TrimSuffix(thisPath, "/"), sp+"/")
+				pathname := strings.TrimPrefix(strings.TrimSuffix(thisPath, "/"), info.String()+"/")
 				snaplogger.WithField("pathname", pathname).Debug("matched")
 				fill(pathname, nil, 0)
 			}
@@ -65,7 +57,7 @@ func (self *Dpfs) Readdir(path string,
 	}
 
 	// no a revision so list dirs (snapshot-id or revision list)
-	files, _, err := self.storage.ListFiles(0, sp+"/")
+	files, _, err := self.storage.ListFiles(0, info.String()+"/")
 	if err != nil {
 		logger.WithError(err).Warning("error listing files")
 		return -fuse.ENOSYS
