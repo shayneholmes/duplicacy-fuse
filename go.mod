@@ -11,7 +11,7 @@ require (
 	github.com/billziss-gh/cgofuse v1.2.0
 	github.com/bkaradzic/go-lz4 v1.0.0 // indirect
 	github.com/gilbertchen/azure-sdk-for-go v14.1.1+incompatible // indirect
-	github.com/gilbertchen/duplicacy v2.3.0+incompatible
+	github.com/gilbertchen/duplicacy v2.3.0+incompatible // indirect
 	github.com/gilbertchen/go-dropbox v0.0.0-20160206021034-90711b603312 // indirect
 	github.com/gilbertchen/go-ole v1.2.0 // indirect
 	github.com/gilbertchen/go.dbus v0.0.0-20190607191240-8591994fa32f // indirect
@@ -23,9 +23,8 @@ require (
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
 	github.com/ncw/swift v1.0.49 // indirect
 	github.com/pkg/sftp v1.11.0 // indirect
-	github.com/satori/go.uuid v1.2.0
+	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
-	github.com/stretchr/testify v1.4.0
 	github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec // indirect
 	golang.org/x/crypto v0.0.0-20200117160349-530e935923ad // indirect
 	golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa // indirect

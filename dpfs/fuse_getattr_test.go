@@ -1,4 +1,4 @@
-package main
+package dpfs
 
 import (
 	"testing"
@@ -12,7 +12,7 @@ func TestDpfs_Getattr(t *testing.T) {
 		self *Dpfs
 		path string
 		stat *fuse.Stat_t
-		fh uint64
+		fh   uint64
 		errc int
 	}{
 		{&Dpfs{}, "/desktop.ini", &fuse.Stat_t{}, 0, -fuse.ENOENT},

@@ -1,4 +1,4 @@
-package main
+package dpfs
 
 import (
 	uuid "github.com/satori/go.uuid"

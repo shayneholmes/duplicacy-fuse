@@ -1,4 +1,4 @@
-package main
+package dpfs
 
 import (
 	"github.com/billziss-gh/cgofuse/fuse"
