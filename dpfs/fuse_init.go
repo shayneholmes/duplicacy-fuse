@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Init satisfies the Init implementation from fuse.FileSystemInterface
 func (self *Dpfs) Init() {
 	var repository, snapshotid, storageName, storagePassword, loglevel string
 	var revision int

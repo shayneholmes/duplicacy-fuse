@@ -7,7 +7,7 @@ import (
 	duplicacy "github.com/gilbertchen/duplicacy/src"
 )
 
-// Dpfs is the Duplicacy filesystem type
+// Dpfs is the Duplicacy filesystem type. This type satisfies the fuse.FileSystemInterface interace
 type Dpfs struct {
 	fuse.FileSystemBase
 	config     *duplicacy.Config

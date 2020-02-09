@@ -15,6 +15,8 @@ func TestDpfs_newpathInfo(t *testing.T) {
 		str      string
 	}{
 		{"&Dpfs{}", &Dpfs{}, "/", pathInfo{}, "snapshots"},
+		{"&Dpfs{}", &Dpfs{}, "/desktop.ini", pathInfo{snapshotid: "desktop.ini"}, "snapshots/desktop.ini"},
+		{"&Dpfs{}", &Dpfs{}, "/id/desktop.ini", pathInfo{snapshotid: "id"}, "snapshots/id"},
 		{"&Dpfs{}", &Dpfs{}, "/id", pathInfo{snapshotid: "id"}, "snapshots/id"},
 		{"&Dpfs{}", &Dpfs{}, "/id/3", pathInfo{snapshotid: "id", revision: 3}, "snapshots/id/3"},
 		{"&Dpfs{}", &Dpfs{}, "/id/3/file.txt", pathInfo{snapshotid: "id", revision: 3, filepath: "/file.txt"}, "snapshots/id/3/file.txt"},

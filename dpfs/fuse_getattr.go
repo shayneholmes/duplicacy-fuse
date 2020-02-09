@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Getattr satisfies the Getattr implementation from fuse.FileSystemInterface
 func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 	info := self.newpathInfo(path)
 	logger := log.WithFields(log.Fields{
@@ -19,18 +20,18 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 	})
 
 	// handle files that shouldn't exist here
-	if (info.snapshotid == "" && info.revision == 0) && 
+	if (info.snapshotid == "" && info.revision == 0) &&
 		(path == "/desktop.ini" ||
-		path == "/folder.jpg" ||
-		path == "/folder.gif") {
-			return -fuse.ENOENT
+			path == "/folder.jpg" ||
+			path == "/folder.gif") {
+		return -fuse.ENOENT
 	}
 
-	if (info.revision == 0) && 
+	if (info.revision == 0) &&
 		(path == "/"+info.snapshotid+"/desktop.ini" ||
-		path == "/"+info.snapshotid+"/folder.jpg" ||
-		path == "/"+info.snapshotid+"/folder.gif") {
-			return -fuse.ENOENT
+			path == "/"+info.snapshotid+"/folder.jpg" ||
+			path == "/"+info.snapshotid+"/folder.gif") {
+		return -fuse.ENOENT
 	}
 
 	// handle root and first level
