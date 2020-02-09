@@ -100,5 +100,6 @@ func (self *Dpfs) Init() {
 	self.config = config
 	self.repository = repository
 
+	// start background cleaner of our cache to keep memory use down
 	go self.cleanReaddirCache(time.Minute * 2)
 }

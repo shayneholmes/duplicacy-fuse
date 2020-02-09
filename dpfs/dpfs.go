@@ -21,6 +21,7 @@ type Dpfs struct {
 	files      sync.Map
 }
 
+// NewDuplicacyfs creates an initial Dpfs struct
 func NewDuplicacyfs() *Dpfs {
 	self := Dpfs{}
 	return &self

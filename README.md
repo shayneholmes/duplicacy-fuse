@@ -22,7 +22,9 @@ Check out [cgofuse](https://github.com/billziss-gh/cgofuse) for full requirement
 * Windows (cgo) : [WinFsp](https://github.com/billziss-gh/winfsp), gcc
 * Windows (!cgo)  : [WinFsp](https://github.com/billziss-gh/winfsp)
 
-## Building
+## CLI
+
+### Building
 
 ```sh
 go get -u gitlab.com/andrewheberle/duplicacy-fuse
@@ -30,7 +32,7 @@ go get -u gitlab.com/andrewheberle/duplicacy-fuse
 
 Optional: To build the !cgo version on Windows, set the "CGO_ENABLED" environment variable to "0" before building.
 
-## Usage
+### Usage
 
 ```sh
 duplicacy-fuse <mount point> [options]
@@ -49,6 +51,23 @@ duplicacy-fuse <mount point> [options]
   `-o revision=<number>` : Which revision to mount. Cannot be specified when the `all` is specified.
   
   `-o all` : Display all snapshot ids for the specified storage.
+
+## Library
+
+```go
+import (
+  "github.com/billziss-gh/cgofuse/fuse"
+  "gitlab.com/andrewheberle/duplicacy-fuse/dpfs"
+)
+
+func main() {
+  duplicacyfs := dpfs.NewDuplicacyfs()
+  host := fuse.NewFileSystemHost(duplicacyfs)
+  mountpoint := "/a/path"
+  options := []string{"-o", "repository=/path/to/repo"}
+  host.Mount(mountpoint, options)
+}
+```
   
 ## Status
 
