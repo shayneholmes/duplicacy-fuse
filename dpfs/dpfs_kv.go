@@ -15,9 +15,11 @@ type DpfsKvStore interface {
 	Close() error
 	Delete(key []byte) error
 	Get(key []byte) ([]byte, error)
+	GetString(key []byte) (string, error)
 	GetEntry(key []byte) (*duplicacy.Entry, error)
 	Has(key []byte) bool
 	Put(key, value []byte) error
+	PutString(key []byte, value string) error
 	PutEntry(key []byte, entry *duplicacy.Entry) error
 	Scan(prefix []byte, f func(key []byte) error) error
 }

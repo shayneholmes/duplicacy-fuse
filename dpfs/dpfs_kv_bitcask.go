@@ -38,6 +38,15 @@ func (kv *bitcaskKv) Get(key []byte) ([]byte, error) {
 	return kv.db.Get(key)
 }
 
+func (kv *bitcaskKv) GetString(key []byte) (string, error) {
+	value, err := kv.db.Get(key)
+	if err != nil {
+		return "", err
+	}
+
+	return string(value), nil
+}
+
 func (kv *bitcaskKv) GetEntry(key []byte) (*duplicacy.Entry, error) {
 	value, err := kv.db.Get(key)
 	if err != nil {
@@ -49,6 +58,10 @@ func (kv *bitcaskKv) GetEntry(key []byte) (*duplicacy.Entry, error) {
 
 func (kv *bitcaskKv) Put(key, value []byte) error {
 	return kv.db.Put(key, value)
+}
+
+func (kv *bitcaskKv) PutString(key []byte, value string) error {
+	return kv.db.Put(key, []byte(value))
 }
 
 func (kv *bitcaskKv) PutEntry(key []byte, entry *duplicacy.Entry) error {

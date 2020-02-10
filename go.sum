@@ -268,6 +268,8 @@ gitlab.com/andrewheberle/duplicacy-fuse/dpfs v0.0.0-20200210122317-04094459d5c5 
 gitlab.com/andrewheberle/duplicacy-fuse/dpfs v0.0.0-20200210122317-04094459d5c5/go.mod h1:g63Q0mbdSya/IAu9OojxSryY0gCIGqjGQ7UNTa1QU60=
 gitlab.com/andrewheberle/duplicacy-fuse/dpfs v0.0.0-20200210122852-459b3ecfb685 h1:DTSk9KJBJBG5/ApZ1LAOCTfAeRaiGp+2+l2ReeAZ/5E=
 gitlab.com/andrewheberle/duplicacy-fuse/dpfs v0.0.0-20200210122852-459b3ecfb685/go.mod h1:g63Q0mbdSya/IAu9OojxSryY0gCIGqjGQ7UNTa1QU60=
+gitlab.com/andrewheberle/duplicacy-fuse/dpfs v0.0.0-20200210123127-a12a272f6cff h1:QNjYwxa8mGJFTGZxButjr1sU6bSfMVjHprnrkRdUwHo=
+gitlab.com/andrewheberle/duplicacy-fuse/dpfs v0.0.0-20200210123127-a12a272f6cff/go.mod h1:g63Q0mbdSya/IAu9OojxSryY0gCIGqjGQ7UNTa1QU60=
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
