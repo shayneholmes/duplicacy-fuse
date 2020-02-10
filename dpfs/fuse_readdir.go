@@ -29,6 +29,14 @@ func (self *Dpfs) Readdir(path string,
 		snaplogger := logger.WithField("snapshotid", info.snapshotid).WithField("revision", info.revision)
 		snaplogger.WithField("call", "CreateSnapshotManager").Debug()
 
+		// update cache if required
+		err := self.cacheRevisionFiles(info.snapshotid, info.revision)
+		if err != nil {
+			log.WithError(err).Debug("cacheRevisionFiles")
+			return 0
+		}
+
+		// do old version of cache for rest of readdir
 		files, err := self.getRevisionFiles(info.snapshotid, info.revision)
 		if err != nil {
 			snaplogger.WithError(err).Debug()

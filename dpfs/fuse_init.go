@@ -3,6 +3,8 @@ package dpfs
 import (
 	"os"
 	"path"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/billziss-gh/cgofuse/fuse"
@@ -12,11 +14,11 @@ import (
 
 // Init satisfies the Init implementation from fuse.FileSystemInterface
 func (self *Dpfs) Init() {
-	var repository, snapshotid, storageName, storagePassword, loglevel string
+	var repository, snapshotid, storageName, storagePassword, loglevel, cachedir string
 	var revision int
 	var debug, all bool
 
-	_, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%s revision=%d password=%s loglevel=%s debug all", &repository, &storageName, &snapshotid, &revision, &storagePassword, &loglevel, &debug, &all)
+	_, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%s revision=%d password=%s loglevel=%s cachedir=%s debug all", &repository, &storageName, &snapshotid, &revision, &storagePassword, &loglevel, &cachedir, &debug, &all)
 	if err != nil {
 		log.WithError(err).Fatal("arg error")
 	}
@@ -42,6 +44,34 @@ func (self *Dpfs) Init() {
 			log.WithError(err).Fatal("could not get current dir")
 		}
 	}
+
+	// check cachedir and create if required
+	if cachedir == "" {
+		var homedir string
+		if runtime.GOOS == "windows" {
+			homedir = os.Getenv("USERPROFILE")
+		} else {
+			homedir = os.Getenv("HOME")
+		}
+
+		cachedir = filepath.Join(homedir, ".duplicacy-fuse")
+	}
+	if stat, err := os.Stat(cachedir); os.IsNotExist(err) {
+		if err := os.Mkdir(cachedir, 0755); err != nil {
+			log.WithError(err).Fatal("error creating cache dir")
+		}
+	} else if !stat.IsDir() {
+		log.Fatal("cache dir exists but is not a directory")
+	}
+
+	// Create new cache/kv db
+	kvpath := "bitcask://" + cachedir
+	cache, err := NewDpfsKv(kvpath)
+	if err != nil {
+		log.WithError(err).Fatal("problem creating kv cache")
+	}
+	log.WithField("kvpath", kvpath).Info("created kv store")
+	self.cache = cache
 
 	if storageName == "" {
 		storageName = "default"

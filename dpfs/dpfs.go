@@ -19,6 +19,8 @@ type Dpfs struct {
 	preference *duplicacy.Preference
 	repository string
 	files      sync.Map
+	mu         sync.RWMutex
+	cache      DpfsKvStore
 }
 
 // NewDuplicacyfs creates an initial Dpfs struct

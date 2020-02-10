@@ -41,15 +41,9 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 		return 0
 	}
 
-	files, err := self.getRevisionFiles(info.snapshotid, info.revision)
+	entry, err := self.findFile(info.snapshotid, info.revision, info.filepath)
 	if err != nil {
-		logger.WithError(err).Debug("getRevisionFiles")
-		return -fuse.ENOSYS
-	}
-
-	entry, err := self.findFile(info.filepath, files)
-	if err != nil {
-		logger.WithError(err).Debug("findFile")
+		logger.WithError(err).Debug()
 		return -fuse.ENOENT
 	}
 
@@ -61,6 +55,24 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 		stat.Mode = fuse.S_IFREG | 0444
 		stat.Size = entry.Size
 	}
+
+	stat.Mtim = fuse.Timespec{
+		Sec: entry.Time,
+	}
+
+	/* entry, err := self.findFile(info.filepath, files)
+	if err != nil {
+		logger.WithError(err).Debug("findFile")
+		return -fuse.ENOENT
+	}
+	if entry.IsDir() {
+		logger.Debug("directory")
+		stat.Mode = fuse.S_IFDIR | 0555
+	} else {
+		logger.WithField("size", entry.Size).Debug("file")
+		stat.Mode = fuse.S_IFREG | 0444
+		stat.Size = entry.Size
+	} */
 
 	return 0
 }

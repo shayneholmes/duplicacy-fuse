@@ -16,13 +16,7 @@ func (self *Dpfs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) 
 
 	info := self.newpathInfo(path)
 
-	files, err := self.getRevisionFiles(info.snapshotid, info.revision)
-	if err != nil {
-		logger.WithError(err).Debug()
-		return 0
-	}
-
-	entry, err := self.findFile(info.filepath, files)
+	entry, err := self.findFile(info.snapshotid, info.revision, info.filepath)
 	if err != nil {
 		logger.WithError(err).Debug()
 		return 0

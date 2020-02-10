@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go v1.28.13 // indirect
 	github.com/billziss-gh/cgofuse v1.2.0
 	github.com/bkaradzic/go-lz4 v1.0.0 // indirect
-	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
+	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/dnaeon/go-vcr v1.0.1 // indirect
 	github.com/gilbertchen/azure-sdk-for-go v14.1.1+incompatible // indirect
 	github.com/gilbertchen/duplicacy v2.3.0+incompatible
@@ -27,6 +27,7 @@ require (
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1 // indirect
 	github.com/ncw/swift v1.0.50 // indirect
 	github.com/pkg/sftp v1.11.0 // indirect
+	github.com/prologic/bitcask v0.3.5
 	github.com/satori/go.uuid v1.2.0
 	github.com/segmentio/go-env v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.4.2

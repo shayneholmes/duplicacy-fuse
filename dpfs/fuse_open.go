@@ -19,16 +19,10 @@ func (self *Dpfs) Open(path string, flags int) (errc int, fh uint64) {
 
 	info := self.newpathInfo(path)
 
-	files, err := self.getRevisionFiles(info.snapshotid, info.revision)
+	entry, err := self.findFile(info.snapshotid, info.revision, info.filepath)
 	if err != nil {
 		logger.WithError(err).Debug()
-		return -fuse.ENOSYS, ^uint64(0)
-	}
-
-	entry, err := self.findFile(info.filepath, files)
-	if err != nil {
-		logger.WithError(err).Debug()
-		return -fuse.ENOENT, ^uint64(0)
+		return -fuse.ENOENT, 0
 	}
 
 	if entry.IsDir() {
