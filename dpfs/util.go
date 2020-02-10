@@ -17,6 +17,10 @@ type pathInfo struct {
 	revision   int
 }
 
+const (
+	isCached = "cached ok"
+)
+
 func (self *Dpfs) newpathInfo(filepath string) (p pathInfo) {
 	// revision and snapshotid is set so filepath is just filepath
 	if self.snapshotid != "" && self.revision != 0 {
@@ -79,7 +83,51 @@ type readdirCache struct {
 	ts    time.Time
 }
 
+func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
+	self.mu.Lock()
+	defer self.mu.Unlock()
+	is_cached_key := []byte(fmt.Sprintf("%s:%d", snapshotid, revision))
+	if self.cache == nil {
+		return fmt.Errorf("cache was nil")
+	}
+	if v, err := self.cache.Get(is_cached_key); err == nil && v.Path == "isCached/" {
+		return nil
+	}
+
+	// Retrieve files
+	manager, err := self.createBackupManager(snapshotid)
+	if err != nil {
+		return fmt.Errorf("problem creating manager: %w", err)
+	}
+	snap, err := self.downloadSnapshot(manager, snapshotid, revision, nil)
+	if err != nil {
+		return fmt.Errorf("problem dowloading snapshot: %w", err)
+	}
+
+	for _, entry := range snap.Files {
+		k := key(snapshotid, revision, entry.Path)
+		if err != nil {
+			return fmt.Errorf("problem encoding entry (%s): %w", k, err)
+		}
+		if err := self.cache.Put(k, entry); err != nil {
+			log.WithError(err).Debug(string(k))
+			return fmt.Errorf("problem with Put(%s): %w", k, err)
+		}
+	}
+
+	if err := self.cache.Put(is_cached_key, &duplicacy.Entry{Path: "isCached/"}); err != nil {
+		return fmt.Errorf("problem with Put(%s): %w", is_cached_key, err)
+	}
+
+	return nil
+}
+
 func (self *Dpfs) getRevisionFiles(snapshotid string, revision int) ([]*duplicacy.Entry, error) {
+	// do caching here
+	if err := self.cacheRevisionFiles(snapshotid, revision); err != nil {
+		log.WithError(err).Info()
+	}
+
 	// Check for cached list of files
 	key := fmt.Sprintf("%s_%d", snapshotid, revision)
 	if f, ok := self.files.Load(key); ok {
@@ -181,12 +229,9 @@ func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid 
 	return snap, nil
 }
 
-func (self *Dpfs) findFile(filepath string, files []*duplicacy.Entry) (*duplicacy.Entry, error) {
+func (self *Dpfs) findFile(snapshotid string, revision int, filepath string) (*duplicacy.Entry, error) {
 	filepath = strings.TrimPrefix(filepath, "/")
-	for _, entry := range files {
-		if filepath == entry.Path || filepath+"/" == entry.Path {
-			return entry, nil
-		}
-	}
-	return nil, fmt.Errorf("file not found")
+
+	// Use our cache
+	return self.cache.Get(key(snapshotid, revision, filepath))
 }
