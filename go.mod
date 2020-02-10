@@ -8,7 +8,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sirupsen/logrus v1.4.2
-	gitlab.com/andrewheberle/duplicacy-fuse/dpfs v0.0.0-20200210121956-2a56fc6d7802
+	gitlab.com/andrewheberle/duplicacy-fuse/dpfs v0.0.0-20200210122317-04094459d5c5
 	go.opencensus.io v0.22.3 // indirect
 	golang.org/x/exp v0.0.0-20200207192155-f17229e696bd // indirect
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367 // indirect

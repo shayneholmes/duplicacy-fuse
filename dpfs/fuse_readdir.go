@@ -33,14 +33,18 @@ func (self *Dpfs) Readdir(path string,
 		// update cache if required
 		err := self.cacheRevisionFiles(info.snapshotid, info.revision)
 		if err != nil {
-			log.WithError(err).Debug("cacheRevisionFiles")
+			snaplogger.WithError(err).Debug("cacheRevisionFiles")
 			return 0
 		}
 
 		// Regex to match current dir and files but not within subdirs
 		//match := fmt.Sprintf("^%s/?$|^%s/[^/]*/?$", sp, sp)
 		match := fmt.Sprintf("^%s/[^/]*/?$", info.String())
-		regex := regexp.MustCompile(match)
+		regex, err := regexp.Compile(match)
+		if err != nil {
+			snaplogger.WithError(err).Info()
+			return 0
+		}
 
 		ts := time.Now()
 		prefix := key(info.snapshotid, info.revision, info.filepath)
