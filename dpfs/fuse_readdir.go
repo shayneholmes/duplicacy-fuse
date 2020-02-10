@@ -35,6 +35,7 @@ func (self *Dpfs) Readdir(path string,
 			snaplogger.WithError(err).Debug("cacheRevisionFiles")
 			return 0
 		}
+		snaplogger.Debug("cacheRevisionFiles done")
 
 		// Regex to match current dir and files but not within subdirs
 		match := fmt.Sprintf("^%s/[^/]*/?$", info.String())
@@ -66,6 +67,7 @@ func (self *Dpfs) Readdir(path string,
 			snaplogger.WithError(err).Debug()
 			return 0
 		}
+		snaplogger.Debug("getRevisionFiles done")
 
 		//ts = time.Now()
 		for _, v := range files {
