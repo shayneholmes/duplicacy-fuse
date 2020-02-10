@@ -90,7 +90,7 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	if self.cache == nil {
 		return fmt.Errorf("cache was nil")
 	}
-	if v, err := self.cache.Get(is_cached_key); err == nil && v.Path == "isCached/" {
+	if v, err := self.cache.Get(is_cached_key); err == nil && v == []byte("isCached") {
 		return nil
 	}
 
@@ -109,13 +109,13 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 		if err != nil {
 			return fmt.Errorf("problem encoding entry (%s): %w", k, err)
 		}
-		if err := self.cache.Put(k, entry); err != nil {
+		if err := self.cache.PutEntry(k, entry); err != nil {
 			log.WithError(err).Debug(string(k))
 			return fmt.Errorf("problem with Put(%s): %w", k, err)
 		}
 	}
 
-	if err := self.cache.Put(is_cached_key, &duplicacy.Entry{Path: "isCached/"}); err != nil {
+	if err := self.cache.Put(is_cached_key, []byte("isCached")); err != nil {
 		return fmt.Errorf("problem with Put(%s): %w", is_cached_key, err)
 	}
 
@@ -233,5 +233,5 @@ func (self *Dpfs) findFile(snapshotid string, revision int, filepath string) (*d
 	filepath = strings.TrimPrefix(filepath, "/")
 
 	// Use our cache
-	return self.cache.Get(key(snapshotid, revision, filepath))
+	return self.cache.GetEntry(key(snapshotid, revision, filepath))
 }

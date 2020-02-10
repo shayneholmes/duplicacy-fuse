@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/billziss-gh/cgofuse/fuse"
 	uuid "github.com/satori/go.uuid"
@@ -36,6 +37,26 @@ func (self *Dpfs) Readdir(path string,
 			return 0
 		}
 
+		// Regex to match current dir and files but not within subdirs
+		//match := fmt.Sprintf("^%s/?$|^%s/[^/]*/?$", sp, sp)
+		match := fmt.Sprintf("^%s/[^/]*/?$", info.String())
+		regex := regexp.MustCompile(match)
+
+		ts := time.Now()
+		prefix := key(info.snapshotid, info.revision, info.filepath)
+		snaplogger.WithField("prefix", string(prefix)).Info()
+		if err := self.cache.Scan(prefix, func(key []byte) error {
+			thisPath := self.abs(strings.Split(string(key), ":")[2:], info.snapshotid, info.revision)
+			if regex.MatchString(thisPath) {
+				_ = strings.TrimPrefix(strings.TrimSuffix(thisPath, "/"), info.String()+"/")
+				// fill(pathname, nil, 0)
+			}
+			return nil
+		}); err != nil {
+			snaplogger.WithError(err).Info()
+		}
+		snaplogger.WithField("time", time.Now().Sub(ts)).Info("kv scan time")
+
 		// do old version of cache for rest of readdir
 		files, err := self.getRevisionFiles(info.snapshotid, info.revision)
 		if err != nil {
@@ -43,10 +64,7 @@ func (self *Dpfs) Readdir(path string,
 			return 0
 		}
 
-		// Regex to match current dir and files but not within subdirs
-		//match := fmt.Sprintf("^%s/?$|^%s/[^/]*/?$", sp, sp)
-		match := fmt.Sprintf("^%s/[^/]*/?$", info.String())
-		regex := regexp.MustCompile(match)
+		ts = time.Now()
 		for _, v := range files {
 			thisPath := self.abs(v.Path, info.snapshotid, info.revision)
 			snaplogger = snaplogger.WithFields(log.Fields{
@@ -62,6 +80,8 @@ func (self *Dpfs) Readdir(path string,
 				fill(pathname, nil, 0)
 			}
 		}
+		snaplogger.WithField("time", time.Now().Sub(ts)).Info("slice scan time")
+
 		return 0
 	}
 
