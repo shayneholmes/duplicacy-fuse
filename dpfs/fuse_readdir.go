@@ -46,7 +46,8 @@ func (self *Dpfs) Readdir(path string,
 		prefix := key(info.snapshotid, info.revision, info.filepath)
 		snaplogger.WithField("prefix", string(prefix)).Info()
 		if err := self.cache.Scan(prefix, func(key []byte) error {
-			thisPath := self.abs(strings.Split(string(key), ":")[2:], info.snapshotid, info.revision)
+			filepath := strings.Join(strings.Split(string(key), ":")[2:], "")
+			thisPath := self.abs(filepath, info.snapshotid, info.revision)
 			if regex.MatchString(thisPath) {
 				_ = strings.TrimPrefix(strings.TrimSuffix(thisPath, "/"), info.String()+"/")
 				// fill(pathname, nil, 0)

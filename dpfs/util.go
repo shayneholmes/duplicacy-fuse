@@ -90,7 +90,7 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	if self.cache == nil {
 		return fmt.Errorf("cache was nil")
 	}
-	if v, err := self.cache.Get(is_cached_key); err == nil && v == []byte("isCached") {
+	if v, err := self.cache.Get(is_cached_key); err == nil && string(v) == isCached {
 		return nil
 	}
 
@@ -115,7 +115,7 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 		}
 	}
 
-	if err := self.cache.Put(is_cached_key, []byte("isCached")); err != nil {
+	if err := self.cache.Put(is_cached_key, []byte(isCached)); err != nil {
 		return fmt.Errorf("problem with Put(%s): %w", is_cached_key, err)
 	}
 
