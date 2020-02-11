@@ -5,7 +5,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"time"
 
 	duplicacy "github.com/gilbertchen/duplicacy/src"
 	log "github.com/sirupsen/logrus"
@@ -19,6 +18,8 @@ type pathInfo struct {
 
 const isCached = "cached ok"
 
+// newpathInfo takes a filepath and derives the snapshotid, revision and path taking into account
+// the "root" of the mount in self.snapshotid and self.revision
 func (self *Dpfs) newpathInfo(filepath string) (p pathInfo) {
 	// revision and snapshotid is set so filepath is just filepath
 	if self.snapshotid != "" && self.revision != 0 {
@@ -61,6 +62,7 @@ func (self *Dpfs) newpathInfo(filepath string) (p pathInfo) {
 	return
 }
 
+// String function for pathInfo
 func (info *pathInfo) String() string {
 	if info.filepath != "" {
 		return fmt.Sprintf("snapshots/%s/%d%s", info.snapshotid, info.revision, info.filepath)
@@ -74,11 +76,6 @@ func (info *pathInfo) String() string {
 
 	}
 	return "snapshots"
-}
-
-type readdirCache struct {
-	files []*duplicacy.Entry
-	ts    time.Time
 }
 
 func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
@@ -129,6 +126,7 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	return nil
 }
 
+// converts to an absolute path
 func (self *Dpfs) abs(filepath string, snapshotid string, revision int) (absolutepath string) {
 	switch strings.Count(self.root, "/") {
 	case 0:
@@ -170,6 +168,8 @@ func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid 
 }
 
 func (self *Dpfs) findFile(snapshotid string, revision int, filepath string) (*duplicacy.Entry, error) {
+	// should we update our cache here?
+	// this should never be run before something that caches revision contents
 	filepath = strings.TrimPrefix(filepath, "/")
 
 	// Use our cache

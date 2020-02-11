@@ -18,7 +18,7 @@ type Dpfs struct {
 	password   string
 	preference *duplicacy.Preference
 	repository string
-	mu         sync.RWMutex
+	mu         sync.Mutex
 	cache      DpfsKvStore
 }
 
