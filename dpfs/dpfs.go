@@ -22,6 +22,15 @@ type Dpfs struct {
 	cache      DpfsKvStore
 }
 
+// Nicer names for fuse errors/return codes
+const (
+	NotImplemented        = -fuse.ENOSYS
+	NoSuchFileOrDirectory = -fuse.ENOENT
+	IOError               = -fuse.EIO
+	IsDirectory           = -fuse.EISDIR
+	NotDirectory          = -fuse.ENOTDIR
+)
+
 // NewDuplicacyfs creates an initial Dpfs struct
 func NewDuplicacyfs() *Dpfs {
 	self := Dpfs{}

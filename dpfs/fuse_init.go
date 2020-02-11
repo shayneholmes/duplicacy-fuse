@@ -117,9 +117,7 @@ func (self *Dpfs) Init() {
 	self.root = "snapshots"
 
 	// if snapshot id was not specified and not viewing all then default to self.preference.SnapshotID
-	log.WithField("snapshotid", snapshotid).Info()
 	if snapshotid == "" && !all {
-		log.Info("setting snapshotid to default")
 		self.snapshotid = self.preference.SnapshotID
 	} else {
 		self.snapshotid = snapshotid
@@ -129,8 +127,6 @@ func (self *Dpfs) Init() {
 	if revision != 0 {
 		self.revision = revision
 	}
-
-	log.WithField("root", self.root).Debug()
 
 	config, _, err := duplicacy.DownloadConfig(self.storage, storagePassword)
 	if err != nil {
@@ -144,14 +140,4 @@ func (self *Dpfs) Init() {
 	self.password = storagePassword
 	self.config = config
 	self.repository = repository
-
-	log.WithFields(log.Fields{
-		"snapshotid":            self.snapshotid,
-		"password":              self.password,
-		"revision":              self.revision,
-		"root":                  self.root,
-		"repository":            self.repository,
-		"preference.SnapshotID": self.preference.SnapshotID,
-		"all":                   all,
-	}).Info("self")
 }

@@ -24,14 +24,14 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 		(path == "/desktop.ini" ||
 			path == "/folder.jpg" ||
 			path == "/folder.gif") {
-		return -fuse.ENOENT
+		return NoSuchFileOrDirectory
 	}
 
 	if (info.revision == 0) &&
 		(path == "/"+info.snapshotid+"/desktop.ini" ||
 			path == "/"+info.snapshotid+"/folder.jpg" ||
 			path == "/"+info.snapshotid+"/folder.gif") {
-		return -fuse.ENOENT
+		return NoSuchFileOrDirectory
 	}
 
 	// handle root and first level
@@ -44,7 +44,7 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 	entry, err := self.findFile(info.snapshotid, info.revision, info.filepath)
 	if err != nil {
 		logger.WithError(err).Debug()
-		return -fuse.ENOENT
+		return NoSuchFileOrDirectory
 	}
 
 	if entry.IsDir() {
@@ -59,20 +59,6 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 	stat.Mtim = fuse.Timespec{
 		Sec: entry.Time,
 	}
-
-	/* entry, err := self.findFile(info.filepath, files)
-	if err != nil {
-		logger.WithError(err).Debug("findFile")
-		return -fuse.ENOENT
-	}
-	if entry.IsDir() {
-		logger.Debug("directory")
-		stat.Mode = fuse.S_IFDIR | 0555
-	} else {
-		logger.WithField("size", entry.Size).Debug("file")
-		stat.Mode = fuse.S_IFREG | 0444
-		stat.Size = entry.Size
-	} */
 
 	return 0
 }

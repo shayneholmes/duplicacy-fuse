@@ -37,6 +37,20 @@ func (self *Dpfs) Readdir(path string,
 		}
 		snaplogger.Debug("cacheRevisionFiles done")
 
+		// For non-root paths in a revision do extra checks
+		if info.filepath != "" {
+			// Make sure it actually exists
+			entry, err := self.findFile(info.snapshotid, info.revision, info.filepath)
+			if err != nil {
+				return NoSuchFileOrDirectory
+			}
+
+			// Make sure its a dir
+			if entry.IsFile() {
+				return NotDirectory
+			}
+		}
+
 		// Regex to match current dir and files but not within subdirs
 		match := fmt.Sprintf("^%s/[^/]*/?$", info.String())
 		regex, err := regexp.Compile(match)

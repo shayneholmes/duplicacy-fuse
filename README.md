@@ -87,5 +87,6 @@ Performance is quite slow when opening files.
 * Tests - Implement tests for the various fuse methods (current ones for Getattr always fail)
 * KV store is an Interface so potentially a better/faster option could be implemented.
 * Cache snapshot ID and revisions for speedy top level browsing.
+* Implement stubs for all fuse operations with logging to see whats missing 
 * Make better :)
 * Upstream?
