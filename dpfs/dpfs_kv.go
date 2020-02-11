@@ -27,7 +27,7 @@ type DpfsKvStore interface {
 func NewDpfsKv(url string) (kv DpfsKvStore, err error) {
 	scheme := strings.Split(url, "://")[0]
 	path := url[len(scheme)+3:]
-	log.WithField("scheme", scheme).WithField("path", path).Info()
+	log.WithField("scheme", scheme).WithField("path", path).Debug()
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return nil, fmt.Errorf("error creating cache dir: %w", err)
 	}

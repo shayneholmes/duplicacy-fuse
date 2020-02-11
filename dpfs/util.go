@@ -84,20 +84,29 @@ type readdirCache struct {
 func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	self.mu.Lock()
 	defer self.mu.Unlock()
+
+	logger := log.WithFields(log.Fields{
+		"snapshotid": snapshotid,
+		"revision":   revision,
+		"func":       "cacheRevisionFiles",
+	})
 	is_cached_key := []byte(fmt.Sprintf("%s:%d", snapshotid, revision))
 	if self.cache == nil {
 		return fmt.Errorf("cache was nil")
 	}
+	logger.WithField("is_cached_key", string(is_cached_key)).Debug("checking if cached already")
 	if v, err := self.cache.GetString(is_cached_key); err == nil && v == isCached {
+		logger.WithField("is_cached_key", string(is_cached_key)).Debug("already cached")
 		return nil
 	}
+	logger.WithField("is_cached_key", string(is_cached_key)).Debug("not cached")
 
 	// Retrieve files
 	manager, err := self.createBackupManager(snapshotid)
 	if err != nil {
 		return fmt.Errorf("problem creating manager: %w", err)
 	}
-	snap, err := self.downloadSnapshot(manager, snapshotid, revision, nil)
+	snap, err := self.downloadSnapshot(manager, snapshotid, revision, nil, true)
 	if err != nil {
 		return fmt.Errorf("problem dowloading snapshot: %w", err)
 	}
@@ -120,46 +129,6 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	return nil
 }
 
-func (self *Dpfs) getRevisionFiles(snapshotid string, revision int) ([]*duplicacy.Entry, error) {
-	// do caching here
-	if err := self.cacheRevisionFiles(snapshotid, revision); err != nil {
-		log.WithError(err).Info()
-	}
-
-	// Check for cached list of files
-	key := fmt.Sprintf("%s_%d", snapshotid, revision)
-	if f, ok := self.files.Load(key); ok {
-		cache, castok := f.(readdirCache)
-		if !castok {
-			return nil, fmt.Errorf("could not cast result as readdirCache")
-		}
-		// Update cache timestamp and store
-		cache.ts = time.Now()
-		self.files.Store(key, cache)
-
-		// return result
-		return cache.files, nil
-	}
-
-	// Retrieve files
-	manager, err := self.createBackupManager(snapshotid)
-	if err != nil {
-		return nil, fmt.Errorf("problem creating manager: %w", err)
-	}
-	snap, err := self.downloadSnapshot(manager, snapshotid, revision, nil)
-	if err != nil {
-		return nil, fmt.Errorf("problem dowloading snapshot: %w", err)
-	}
-
-	// Store for later
-	self.files.Store(key, readdirCache{
-		files: snap.Files,
-		ts:    time.Now(),
-	})
-
-	return snap.Files, nil
-}
-
 func (self *Dpfs) abs(filepath string, snapshotid string, revision int) (absolutepath string) {
 	switch strings.Count(self.root, "/") {
 	case 0:
@@ -176,33 +145,6 @@ func (self *Dpfs) abs(filepath string, snapshotid string, revision int) (absolut
 	return path.Join(self.root, filepath)
 }
 
-func (self *Dpfs) cleanReaddirCache(age time.Duration) {
-	for {
-		// wait for timer to expire
-		time.Sleep(time.Second * 30)
-
-		// go through map and remove old items
-		self.files.Range(func(key, value interface{}) bool {
-			log.WithField("key", key).Debug("checking age of cache")
-			if cache, ok := value.(readdirCache); ok {
-				purgeafter := time.Now().Add(-age)
-				logger := log.WithFields(log.Fields{
-					"key":        key,
-					"ts":         cache.ts,
-					"purgeafter": purgeafter,
-				})
-				if cache.ts.Before(purgeafter) {
-					logger.Debug("purging item")
-					self.files.Delete(key)
-				} else {
-					logger.Debug("keeping item")
-				}
-			}
-			return true
-		})
-	}
-}
-
 func (self *Dpfs) createBackupManager(snapshotid string) (*duplicacy.BackupManager, error) {
 	manager := duplicacy.CreateBackupManager(snapshotid, self.storage, self.repository, self.password, self.preference.NobackupFile, self.preference.FiltersFile)
 	if manager == nil {
@@ -215,12 +157,12 @@ func (self *Dpfs) createBackupManager(snapshotid string) (*duplicacy.BackupManag
 	return manager, nil
 }
 
-func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid string, revision int, patterns []string) (*duplicacy.Snapshot, error) {
+func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid string, revision int, patterns []string, attributesNeeded bool) (*duplicacy.Snapshot, error) {
 	snap := manager.SnapshotManager.DownloadSnapshot(snapshotid, revision)
 	if snap == nil {
 		return nil, fmt.Errorf("snap was nil")
 	}
-	if !manager.SnapshotManager.DownloadSnapshotContents(snap, patterns, true) {
+	if !manager.SnapshotManager.DownloadSnapshotContents(snap, patterns, attributesNeeded) {
 		return nil, fmt.Errorf("DownloadSnapshotContents was false")
 	}
 

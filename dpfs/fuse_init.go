@@ -5,7 +5,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"time"
 
 	"github.com/billziss-gh/cgofuse/fuse"
 	duplicacy "github.com/gilbertchen/duplicacy/src"
@@ -16,9 +15,9 @@ import (
 func (self *Dpfs) Init() {
 	var repository, snapshotid, storageName, storagePassword, loglevel, cachedir string
 	var revision int
-	var debug, all bool
+	var debug, all, cleancache bool
 
-	_, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%s revision=%d password=%s loglevel=%s cachedir=%s debug all", &repository, &storageName, &snapshotid, &revision, &storagePassword, &loglevel, &cachedir, &debug, &all)
+	_, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%s revision=%d password=%s loglevel=%s cachedir=%s debug all cleancache", &repository, &storageName, &snapshotid, &revision, &storagePassword, &loglevel, &cachedir, &debug, &all, &cleancache)
 	if err != nil {
 		log.WithError(err).Fatal("arg error")
 	}
@@ -62,6 +61,15 @@ func (self *Dpfs) Init() {
 		}
 	} else if !stat.IsDir() {
 		log.Fatal("cache dir exists but is not a directory")
+	} else if stat.IsDir() && cleancache {
+		if err := os.RemoveAll(cachedir); err != nil {
+			log.Fatal("cache dir could not be cleaned")
+
+		} else {
+			if err := os.Mkdir(cachedir, 0755); err != nil {
+				log.WithError(err).Fatal("error re-creating cache dir")
+			}
+		}
 	}
 
 	// Create new cache/kv db
@@ -70,7 +78,7 @@ func (self *Dpfs) Init() {
 	if err != nil {
 		log.WithError(err).Fatal("problem creating kv cache")
 	}
-	log.WithField("kvpath", kvpath).Info("created kv store")
+	log.WithField("kvpath", kvpath).Debug("created kv store")
 	self.cache = cache
 
 	if storageName == "" {
@@ -108,10 +116,16 @@ func (self *Dpfs) Init() {
 
 	self.root = "snapshots"
 
-	if snapshotid != "" {
+	// if snapshot id was not specified and not viewing all then default to self.preference.SnapshotID
+	log.WithField("snapshotid", snapshotid).Info()
+	if snapshotid == "" && !all {
+		log.Info("setting snapshotid to default")
 		self.snapshotid = self.preference.SnapshotID
+	} else {
+		self.snapshotid = snapshotid
 	}
 
+	// If revision was specified then set self.revision
 	if revision != 0 {
 		self.revision = revision
 	}
@@ -131,6 +145,13 @@ func (self *Dpfs) Init() {
 	self.config = config
 	self.repository = repository
 
-	// start background cleaner of our cache to keep memory use down
-	go self.cleanReaddirCache(time.Minute * 2)
+	log.WithFields(log.Fields{
+		"snapshotid":            self.snapshotid,
+		"password":              self.password,
+		"revision":              self.revision,
+		"root":                  self.root,
+		"repository":            self.repository,
+		"preference.SnapshotID": self.preference.SnapshotID,
+		"all":                   all,
+	}).Info("self")
 }

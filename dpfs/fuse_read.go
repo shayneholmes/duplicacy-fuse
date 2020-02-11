@@ -28,7 +28,7 @@ func (self *Dpfs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) 
 		return 0
 	}
 
-	snap, err := self.downloadSnapshot(manager, info.snapshotid, info.revision, nil)
+	snap, err := self.downloadSnapshot(manager, info.snapshotid, info.revision, nil, false)
 	if err != nil {
 		logger.WithError(err).Debug()
 		return 0

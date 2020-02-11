@@ -4,6 +4,7 @@ import (
 	duplicacy "github.com/gilbertchen/duplicacy/src"
 	"github.com/prologic/bitcask"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 )
 
 type bitcaskKv struct {
@@ -44,7 +45,7 @@ func (kv *bitcaskKv) GetString(key []byte) (string, error) {
 		return "", err
 	}
 
-	return string(value), nil
+	return cast.ToStringE(value)
 }
 
 func (kv *bitcaskKv) GetEntry(key []byte) (*duplicacy.Entry, error) {
