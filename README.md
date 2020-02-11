@@ -6,7 +6,7 @@ This is my first effort at implementing a file system in userspace.
 
 ## Purpose
 
-Allows snapshots and revisions on storage in a configured duplicacy repository to be mounted (read-only) as a file system.
+Allows snapshots and revisions on storage in a configured [duplicacy](https://github.com/gilbertchen/duplicacy/) repository to be mounted (read-only) as a file system.
 
 ## Building
 
