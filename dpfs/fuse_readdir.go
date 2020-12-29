@@ -52,7 +52,7 @@ func (self *Dpfs) Readdir(path string,
 		}
 
 		// Regex to match current dir and files but not within subdirs
-		match := fmt.Sprintf("^%s/[^/]*/?$", info.String())
+		match := fmt.Sprintf("^%s/[^/]*/?$", regexp.QuoteMeta(info.String()))
 		regex, err := regexp.Compile(match)
 		if err != nil {
 			snaplogger.WithError(err).Warning()
