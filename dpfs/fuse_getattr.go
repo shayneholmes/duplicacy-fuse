@@ -19,23 +19,13 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 		"id":         uuid.NewV4().String(),
 	})
 
-	// handle files that shouldn't exist here
-	if (info.snapshotid == "" && info.revision == 0) &&
-		(path == "/desktop.ini" ||
-			path == "/folder.jpg" ||
-			path == "/folder.gif") {
-		return NoSuchFileOrDirectory
-	}
-
-	if (info.revision == 0) &&
-		(path == "/"+info.snapshotid+"/desktop.ini" ||
-			path == "/"+info.snapshotid+"/folder.jpg" ||
-			path == "/"+info.snapshotid+"/folder.gif") {
-		return NoSuchFileOrDirectory
-	}
-
 	// handle root and first level
 	if info.filepath == "" {
+		exists, _, _, err := self.storage.GetFileInfo(0, info.String())
+		if !exists || err != nil {
+			logger.WithError(err).Warning("not a valid snapshot or revision")
+			return NoSuchFileOrDirectory
+		}
 		logger.Debug("is root or first level")
 		stat.Mode = fuse.S_IFDIR | 0555
 		return 0
