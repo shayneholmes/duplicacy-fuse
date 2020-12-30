@@ -2,7 +2,6 @@ package dpfs
 
 import (
 	"fmt"
-	"path"
 	"strconv"
 	"strings"
 
@@ -124,23 +123,6 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	}
 
 	return nil
-}
-
-// converts to an absolute path
-func (self *Dpfs) abs(filepath string, snapshotid string, revision int) (absolutepath string) {
-	switch strings.Count(self.root, "/") {
-	case 0:
-		if revision == 0 {
-			return path.Join(self.root, snapshotid, filepath)
-		}
-		return path.Join(self.root, snapshotid, strconv.Itoa(revision), filepath)
-	case 1:
-		if revision == 0 {
-			return path.Join(self.root, filepath)
-		}
-		return path.Join(self.root, strconv.Itoa(revision), filepath)
-	}
-	return path.Join(self.root, filepath)
 }
 
 func (self *Dpfs) createBackupManager(snapshotid string) (*duplicacy.BackupManager, error) {
