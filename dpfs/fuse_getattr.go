@@ -50,5 +50,8 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 		Sec: entry.Time,
 	}
 
+	stat.Uid = uint32(entry.UID)
+	stat.Gid = uint32(entry.GID)
+
 	return 0
 }
