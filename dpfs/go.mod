@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/storage v1.5.0 // indirect
 	github.com/Azure/azure-sdk-for-go v39.0.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.9.5 // indirect
+	github.com/OpenPeeDeeP/xdg v1.0.0
 	github.com/aryann/difflib v0.0.0-20170710044230-e206f873d14a // indirect
 	github.com/aws/aws-sdk-go v1.28.13 // indirect
 	github.com/billziss-gh/cgofuse v1.2.0

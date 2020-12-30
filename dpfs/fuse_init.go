@@ -3,9 +3,8 @@ package dpfs
 import (
 	"os"
 	"path"
-	"path/filepath"
-	"runtime"
 
+	"github.com/OpenPeeDeeP/xdg"
 	"github.com/billziss-gh/cgofuse/fuse"
 	duplicacy "github.com/gilbertchen/duplicacy/src"
 	log "github.com/sirupsen/logrus"
@@ -45,15 +44,9 @@ func (self *Dpfs) Init() {
 	}
 
 	// check cachedir and create if required
+	currentXdg := xdg.New("", "duplicacy-fuse")
 	if cachedir == "" {
-		var homedir string
-		if runtime.GOOS == "windows" {
-			homedir = os.Getenv("USERPROFILE")
-		} else {
-			homedir = os.Getenv("HOME")
-		}
-
-		cachedir = filepath.Join(homedir, ".duplicacy-fuse")
+		cachedir = currentXdg.CacheHome()
 	}
 	if stat, err := os.Stat(cachedir); os.IsNotExist(err) {
 		if err := os.Mkdir(cachedir, 0755); err != nil {
