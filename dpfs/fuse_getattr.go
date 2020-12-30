@@ -27,6 +27,22 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 			return NoSuchFileOrDirectory
 		}
 		logger.Debug("is root or first level")
+		// Include timestamp for revisions
+		if info.revision != 0 {
+			manager, err := self.createBackupManager(info.snapshotid)
+			if err != nil {
+				logger.WithError(err).Debug()
+				return 0
+			}
+			snap, err := self.downloadSnapshotInfo(manager, info.snapshotid, info.revision, nil, false)
+			if err != nil {
+				logger.WithError(err).Warning("not a valid snapshot or revision")
+				return NoSuchFileOrDirectory
+			}
+			stat.Mtim = fuse.Timespec{
+				Sec: snap.EndTime,
+			}
+		}
 		stat.Mode = fuse.S_IFDIR | 0555
 		return 0
 	}

@@ -155,10 +155,18 @@ func (self *Dpfs) createBackupManager(snapshotid string) (*duplicacy.BackupManag
 	return manager, nil
 }
 
-func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid string, revision int, patterns []string, attributesNeeded bool) (*duplicacy.Snapshot, error) {
+func (self *Dpfs) downloadSnapshotInfo(manager *duplicacy.BackupManager, snapshotid string, revision int, patterns []string, attributesNeeded bool) (*duplicacy.Snapshot, error) {
 	snap := manager.SnapshotManager.DownloadSnapshot(snapshotid, revision)
 	if snap == nil {
 		return nil, fmt.Errorf("snap was nil")
+	}
+	return snap, nil
+}
+
+func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid string, revision int, patterns []string, attributesNeeded bool) (*duplicacy.Snapshot, error) {
+	snap, err := self.downloadSnapshotInfo(manager, snapshotid, revision, patterns, attributesNeeded)
+	if err != nil {
+		return nil, err
 	}
 	if !manager.SnapshotManager.DownloadSnapshotContents(snap, patterns, attributesNeeded) {
 		return nil, fmt.Errorf("DownloadSnapshotContents was false")
