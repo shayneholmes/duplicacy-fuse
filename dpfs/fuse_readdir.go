@@ -48,7 +48,7 @@ func (self *Dpfs) Readdir(path string,
 			}
 
 			// Make sure its a dir
-			if entry.IsFile() {
+			if !entry.IsDir() {
 				return NotDirectory
 			}
 
