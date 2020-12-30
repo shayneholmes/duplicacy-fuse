@@ -1,8 +1,6 @@
 package dpfs
 
 import (
-	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/billziss-gh/cgofuse/fuse"
@@ -37,6 +35,8 @@ func (self *Dpfs) Readdir(path string,
 		}
 		snaplogger.Debug("cacheRevisionFiles done")
 
+		prefix := key(info.snapshotid, info.revision, strings.TrimPrefix(info.filepath, "/"))
+
 		// For non-root paths in a revision do extra checks
 		if info.filepath != "" {
 			// Make sure it actually exists
@@ -49,32 +49,24 @@ func (self *Dpfs) Readdir(path string,
 			if entry.IsFile() {
 				return NotDirectory
 			}
+
+			// Since this is a non-root path, we can add a slash to the prefix to
+			// find only items inside the path (and not the path itself).
+			prefix = append(prefix, '/')
 		}
 
-		// Regex to match current dir and files but not within subdirs
-		match := fmt.Sprintf("^%s/[^/]*/?$", regexp.QuoteMeta(info.String()))
-		regex, err := regexp.Compile(match)
-		if err != nil {
-			snaplogger.WithError(err).Warning()
-			return 0
-		}
-
-		prefix := key(info.snapshotid, info.revision, strings.TrimPrefix(info.filepath, "/"))
 		snaplogger.WithField("prefix", string(prefix)).Debug()
 		if err := self.cache.Scan(prefix, func(key []byte) error {
-			filepath := strings.Join(strings.Split(string(key), ":")[2:], "")
-			thisPath := self.abs(filepath, info.snapshotid, info.revision)
+			relativePath := string(key[len(prefix):])
 			snaplogger = snaplogger.WithFields(log.Fields{
-				"v.Path":   filepath,
-				"thisPath": thisPath,
-				"match":    match,
+				"key":          string(key),
+				"relativePath": relativePath,
 			})
-			if regex.MatchString(thisPath) {
-				pathname := strings.TrimPrefix(strings.TrimSuffix(thisPath, "/"), info.String()+"/")
-				snaplogger.WithField("pathname", pathname).Debug("matched")
-				fill(pathname, nil, 0)
+			if strings.ContainsRune(relativePath, '/') {
+				snaplogger.Debug("skipping: entry is inside a subdirectory")
 			} else {
-				snaplogger.Debug("NO match")
+				snaplogger.Debug("matched")
+				fill(relativePath, nil, 0)
 			}
 			return nil
 		}); err != nil {
