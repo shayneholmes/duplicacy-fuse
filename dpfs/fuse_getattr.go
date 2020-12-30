@@ -39,10 +39,10 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 
 	if entry.IsDir() {
 		logger.Debug("directory")
-		stat.Mode = fuse.S_IFDIR | 0555
+		stat.Mode = fuse.S_IFDIR | entry.Mode
 	} else {
 		logger.WithField("size", entry.Size).Debug("file")
-		stat.Mode = fuse.S_IFREG | 0444
+		stat.Mode = fuse.S_IFREG | entry.Mode
 		stat.Size = entry.Size
 	}
 
