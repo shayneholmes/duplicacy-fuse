@@ -17,10 +17,12 @@ type DpfsKvStore interface {
 	Get(key []byte) ([]byte, error)
 	GetString(key []byte) (string, error)
 	GetEntry(key []byte) (*duplicacy.Entry, error)
+	GetSnapshot(key []byte) (*duplicacy.Snapshot, error)
 	Has(key []byte) bool
 	Put(key, value []byte) error
 	PutString(key []byte, value string) error
 	PutEntry(key []byte, entry *duplicacy.Entry) error
+	PutSnapshot(key []byte, entry *duplicacy.Snapshot) error
 	Scan(prefix []byte, f func(key []byte) error) error
 }
 
@@ -42,7 +44,30 @@ func key(snapshotid string, revision int, path string) []byte {
 	return []byte(fmt.Sprintf("%s:%d:%s", snapshotid, revision, strings.TrimSuffix(path, "/")))
 }
 
-func encode(entry *duplicacy.Entry) (output []byte, err error) {
+func encodeSnapshot(snapshot *duplicacy.Snapshot) (output []byte, err error) {
+	var buf bytes.Buffer
+
+	enc := gob.NewEncoder(&buf)
+	err = enc.Encode(snapshot)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func decodeSnapshot(input []byte) (snapshot *duplicacy.Snapshot, err error) {
+	buf := bytes.NewBuffer(input)
+	dec := gob.NewDecoder(buf)
+	err = dec.Decode(&snapshot)
+	if err != nil {
+		return &duplicacy.Snapshot{}, err
+	}
+
+	return snapshot, nil
+}
+
+func encodeEntry(entry *duplicacy.Entry) (output []byte, err error) {
 	var buf bytes.Buffer
 
 	enc := gob.NewEncoder(&buf)
@@ -54,7 +79,7 @@ func encode(entry *duplicacy.Entry) (output []byte, err error) {
 	return buf.Bytes(), nil
 }
 
-func decode(input []byte) (entry *duplicacy.Entry, err error) {
+func decodeEntry(input []byte) (entry *duplicacy.Entry, err error) {
 	buf := bytes.NewBuffer(input)
 	dec := gob.NewDecoder(buf)
 	err = dec.Decode(&entry)

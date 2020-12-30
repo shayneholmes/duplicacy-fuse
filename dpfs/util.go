@@ -77,6 +77,84 @@ func (info *pathInfo) String() string {
 	return "snapshots"
 }
 
+func (self *Dpfs) cacheSnapshotRevisions(snapshotid string) error {
+	cacheKey := []byte(fmt.Sprintf("snapshot-revisions:%s", snapshotid))
+	logger := log.WithFields(log.Fields{
+		"snapshotid": snapshotid,
+		"cacheKey":   string(cacheKey),
+		"func":       "cacheSnapshotRevisions",
+	})
+	logger.Debug("caching revisions")
+	if self.cache == nil {
+		return fmt.Errorf("cache was nil")
+	}
+	if self.cache.Has(cacheKey) {
+		return nil
+	}
+
+	// Snapshot revisions aren't in cache: Fetch them.
+	manager, err := self.createBackupManager(snapshotid)
+	if err != nil {
+		return fmt.Errorf("problem creating manager: %w", err)
+	}
+	revs, err := manager.SnapshotManager.ListSnapshotRevisions(snapshotid)
+	if err != nil {
+		return fmt.Errorf("problem listing snapshot revisions: %w", err)
+	}
+	for _, rev := range revs {
+		err := self.cacheRevisionInfo(manager, snapshotid, rev)
+		if err != nil {
+			return fmt.Errorf("problem caching snapshot %v, revision %v: %w", snapshotid, rev, err)
+		}
+	}
+
+	self.mu.Lock()
+	defer self.mu.Unlock()
+	if err := self.cache.PutString(cacheKey, "sentinel"); err != nil {
+		return fmt.Errorf("problem with Put(%s): %w", cacheKey, err)
+	}
+	return nil
+}
+
+func (self *Dpfs) cacheRevisionInfo(manager *duplicacy.BackupManager, snapshotid string, revision int) error {
+	cacheKey := []byte(fmt.Sprintf("revision-info:%s:%d", snapshotid, revision))
+	logger := log.WithFields(log.Fields{
+		"snapshotid": snapshotid,
+		"revision":   revision,
+		"cacheKey":   string(cacheKey),
+		"func":       "cacheRevisionInfo",
+	})
+	if self.cache == nil {
+		return fmt.Errorf("cache was nil")
+	}
+
+	if self.cache.Has(cacheKey) {
+		return nil
+	}
+
+	// The revision info isn't in the cache: Fetch it and load it
+	self.mu.Lock()
+	defer self.mu.Unlock()
+
+	if self.cache.Has(cacheKey) {
+		logger.Debug("already cached")
+		return nil
+	}
+	logger.Debug("not cached")
+
+	// Retrieve files
+	snap, err := self.downloadSnapshotInfo(manager, snapshotid, revision, nil, true)
+	if err != nil {
+		return fmt.Errorf("problem dowloading snapshot: %w", err)
+	}
+
+	if err := self.cache.PutSnapshot(cacheKey, snap); err != nil {
+		return fmt.Errorf("problem with Put(%s): %w", cacheKey, err)
+	}
+
+	return nil
+}
+
 func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	self.mu.Lock()
 	defer self.mu.Unlock()
@@ -86,7 +164,7 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 		"revision":   revision,
 		"func":       "cacheRevisionFiles",
 	})
-	is_cached_key := []byte(fmt.Sprintf("%s:%d", snapshotid, revision))
+	is_cached_key := []byte(fmt.Sprintf("%s:%d-iscached", snapshotid, revision))
 	if self.cache == nil {
 		return fmt.Errorf("cache was nil")
 	}

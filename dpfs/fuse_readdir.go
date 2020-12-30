@@ -1,6 +1,8 @@
 package dpfs
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/billziss-gh/cgofuse/fuse"
@@ -76,7 +78,29 @@ func (self *Dpfs) Readdir(path string,
 		return 0
 	}
 
-	// not a revision so list dirs (snapshot-id or revision list)
+	// List revisions in a snapshot
+	if info.snapshotid != "" {
+		// First, make sure that this snapshot has its revisions cached.
+		if err := self.cacheSnapshotRevisions(info.snapshotid); err != nil {
+			logger.WithError(err).Warning("error caching snapshot revisions")
+			return -fuse.ENOSYS
+		}
+		prefix := []byte(fmt.Sprintf("revision-info:%s:", info.snapshotid))
+		if err := self.cache.Scan(prefix, func(key []byte) error {
+			snap, err := self.cache.GetSnapshot(key)
+			if err != nil {
+				return err
+			}
+			fill(strconv.FormatInt(int64(snap.Revision), 10), nil, 0)
+			logger.WithField("revision", snap.Revision).Debug("matched")
+			return nil
+		}); err != nil {
+			logger.WithError(err).Warning()
+		}
+		return 0
+	}
+
+	// List snapshots directly from the storage
 	files, _, err := self.storage.ListFiles(0, info.String()+"/")
 	if err != nil {
 		logger.WithError(err).Warning("error listing files")
