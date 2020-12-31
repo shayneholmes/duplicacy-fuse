@@ -222,6 +222,9 @@ func (self *Dpfs) createBackupManager(snapshotid string) (*duplicacy.BackupManag
 }
 
 func (self *Dpfs) downloadSnapshotInfo(manager *duplicacy.BackupManager, snapshotid string, revision int, patterns []string, attributesNeeded bool) (*duplicacy.Snapshot, error) {
+	if self.lastSnap != nil && self.lastSnap.ID == snapshotid && self.lastSnap.Revision == revision {
+		return self.lastSnap, nil
+	}
 	snap := manager.SnapshotManager.DownloadSnapshot(snapshotid, revision)
 	if snap == nil {
 		return nil, fmt.Errorf("snap was nil")
