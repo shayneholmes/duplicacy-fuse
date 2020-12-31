@@ -41,7 +41,6 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 		return 0
 	}
 
-	// TODO: Cache snapshot between reads
 	snapshot, err := self.downloadSnapshot(manager, info.snapshotid, info.revision, nil, false)
 	if err != nil {
 		logger.WithError(err).Debug()
