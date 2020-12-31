@@ -47,33 +47,35 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 		return 0
 	}
 
-	var fileCursor int64 // position of the current chunk within the file
+	// fileCursor tracks the position of chunk[i] within the file.
+	var fileCursor int64
 
 	for i := file.StartChunk; i <= file.EndChunk; i++ {
 		chunkHash := snapshot.ChunkHashes[i]
 		chunkLength := int64(snapshot.ChunkLengths[i])
 
 		// File boundaries don't necessarily align with chunk boundaries, so the
-		// file portion of the chunk may not include the whole chunk, on the first
-		// and last chunk of the file.
-		var portionStart, portionEnd int64 = 0, chunkLength
+		// first and last chunk might include bytes that aren't part of the file.
+		// We call the relevant portion the "file chunk".
+		var fileChunkStart, fileChunkEnd int64 = 0, chunkLength
 		if i == file.StartChunk {
-			portionStart = int64(file.StartOffset)
+			fileChunkStart = int64(file.StartOffset)
 		}
 		if i == file.EndChunk {
-			portionEnd = int64(file.EndOffset)
+			fileChunkEnd = int64(file.EndOffset)
 		}
-		portionSize := portionEnd - portionStart
+		fileChunkLength := fileChunkEnd - fileChunkStart
 
-		if offset > fileCursor+portionSize {
-			// This chunk only contains data that precedes the requested offset, so
-			// skip it and move to the next chunk.
-			fileCursor += portionSize
+		if fileCursor+fileChunkLength <= offset {
+			// All this chunk's data precedes the requested offset, so skip it and
+			// move to the next chunk.
+			fileCursor += fileChunkLength
 			continue
 		}
 
-		// We want at least some bytes from this chunk. Fetch the chunk and extract the relevant bytes.
-		// (This code is similar to RetrieveFile in duplicacy_snapshotmanager.)
+		// We should provide some bytes from this chunk. Fetch the chunk and
+		// extract the relevant bytes.
+		// (This code is similar to duplicacy's RetrieveFile.)
 		lastChunk, lastChunkHash := self.chunkDownloader.GetLastDownloadedChunk()
 		var chunk *duplicacy.Chunk
 		if lastChunkHash == chunkHash {
@@ -83,34 +85,32 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 				WithField("chunk", i).
 				WithField("chunkHash", hex.EncodeToString([]byte(chunkHash))).
 				Debug("downloading new chunk")
-			i := self.chunkDownloader.AddChunk(chunkHash)
-			chunk = self.chunkDownloader.WaitForChunk(i)
+			chunkIndex := self.chunkDownloader.AddChunk(chunkHash)
+			chunk = self.chunkDownloader.WaitForChunk(chunkIndex)
 		}
 
-		filePortion := chunk.GetBytes()[portionStart:portionEnd]
+		fileChunk := chunk.GetBytes()[fileChunkStart:fileChunkEnd]
 
 		start := offset - fileCursor
 		if start < 0 {
 			start = 0
 		}
 		end := start + buffLength - int64(n)
-		if end > portionSize {
-			end = portionSize
+		if end > fileChunkLength {
+			end = fileChunkLength
 		}
-		n += copy(buff[n:], filePortion[start:end])
+		n += copy(buff[n:], fileChunk[start:end])
 		logger.
 			WithField("chunk", i).
-			WithField("len", chunkLength).
-			WithField("len(file)", portionSize).
 			WithField("n", n).
 			WithField("start", start).
 			WithField("end", end).
 			Debug("copied bytes")
 
-		fileCursor += portionSize
+		fileCursor += fileChunkLength
 
 		if int64(n) >= buffLength {
-			// Buffer is filled, so we can stop here.
+			// Buffer is full, so we can stop here.
 			break
 		}
 	}
