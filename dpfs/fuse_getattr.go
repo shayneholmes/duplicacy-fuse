@@ -39,7 +39,7 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 				return NoSuchFileOrDirectory
 			}
 			stat.Mtim = fuse.Timespec{
-				Sec: snap.EndTime,
+				Sec: snap.StartTime,
 			}
 		}
 		stat.Mode = fuse.S_IFDIR | 0555
