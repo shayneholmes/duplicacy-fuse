@@ -47,75 +47,72 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 		return 0
 	}
 
-	skippedBytes := int64(0)
+	var fileCursor int64 // position of the current chunk within the file
 
 	for i := file.StartChunk; i <= file.EndChunk; i++ {
+		chunkHash := snapshot.ChunkHashes[i]
 		chunkLength := int64(snapshot.ChunkLengths[i])
-		chunkStart := 0
-		if i == file.StartChunk {
-			chunkStart = file.StartOffset
-		}
-		chunkEnd := snapshot.ChunkLengths[i]
-		if i == file.EndChunk {
-			chunkEnd = file.EndOffset
-		}
-		fileInChunkLength := int64(chunkEnd - chunkStart)
 
-		if offset > skippedBytes+fileInChunkLength {
-			// This chunk has no data we're interested in: Skip it.
-			logger.
-				WithField("chunk", i).
-				WithField("len", chunkLength).
-				WithField("len(file)", fileInChunkLength).
-				WithField("skippedBytes", skippedBytes).
-				Debug("skipping chunk")
-			skippedBytes += fileInChunkLength
+		// File boundaries don't necessarily align with chunk boundaries, so the
+		// file portion of the chunk may not include the whole chunk, on the first
+		// and last chunk of the file.
+		var portionStart, portionEnd int64 = 0, chunkLength
+		if i == file.StartChunk {
+			portionStart = int64(file.StartOffset)
+		}
+		if i == file.EndChunk {
+			portionEnd = int64(file.EndOffset)
+		}
+		portionSize := portionEnd - portionStart
+
+		if offset > fileCursor+portionSize {
+			// This chunk only contains data that precedes the requested offset, so
+			// skip it and move to the next chunk.
+			fileCursor += portionSize
 			continue
 		}
 
-		// We want at least some bytes from this chunk. Fetch the bytes that belong to this file.
+		// We want at least some bytes from this chunk. Fetch the chunk and extract the relevant bytes.
 		// (This code is similar to RetrieveFile in duplicacy_snapshotmanager.)
-		hash := snapshot.ChunkHashes[i]
 		lastChunk, lastChunkHash := self.chunkDownloader.GetLastDownloadedChunk()
 		var chunk *duplicacy.Chunk
-		if lastChunkHash != hash {
+		if lastChunkHash == chunkHash {
+			chunk = lastChunk
+		} else {
 			logger.
 				WithField("chunk", i).
-				WithField("hash", hex.EncodeToString([]byte(hash))).
+				WithField("chunkHash", hex.EncodeToString([]byte(chunkHash))).
 				Debug("downloading new chunk")
-			i := self.chunkDownloader.AddChunk(hash)
+			i := self.chunkDownloader.AddChunk(chunkHash)
 			chunk = self.chunkDownloader.WaitForChunk(i)
-		} else {
-			chunk = lastChunk
 		}
 
-		fileChunk := chunk.GetBytes()[chunkStart:chunkEnd]
+		filePortion := chunk.GetBytes()[portionStart:portionEnd]
 
-		// We want at least some bytes from this chunk.
-		start := offset - int64(skippedBytes)
+		start := offset - fileCursor
 		if start < 0 {
 			start = 0
 		}
 		end := start + buffLength - int64(n)
-		if end > fileInChunkLength {
-			end = fileInChunkLength
+		if end > portionSize {
+			end = portionSize
 		}
-		n += copy(buff[n:], fileChunk[start:end])
+		n += copy(buff[n:], filePortion[start:end])
 		logger.
 			WithField("chunk", i).
 			WithField("len", chunkLength).
-			WithField("len(file)", fileInChunkLength).
+			WithField("len(file)", portionSize).
 			WithField("n", n).
 			WithField("start", start).
 			WithField("end", end).
 			Debug("copied bytes")
 
+		fileCursor += portionSize
+
 		if int64(n) >= buffLength {
-			logger.Debug("filled the buffer")
+			// Buffer is filled, so we can stop here.
 			break
 		}
-
-		skippedBytes += fileInChunkLength
 	}
 
 	return
