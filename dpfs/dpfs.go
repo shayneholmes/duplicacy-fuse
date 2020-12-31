@@ -10,16 +10,17 @@ import (
 // Dpfs is the Duplicacy filesystem type. This type satisfies the fuse.FileSystemInterface interace
 type Dpfs struct {
 	fuse.FileSystemBase
-	config     *duplicacy.Config
-	storage    duplicacy.Storage
-	root       string
-	snapshotid string
-	revision   int
-	password   string
-	preference *duplicacy.Preference
-	repository string
-	mu         sync.Mutex
-	cache      DpfsKvStore
+	config          *duplicacy.Config
+	storage         duplicacy.Storage
+	chunkDownloader *duplicacy.ChunkDownloader
+	root            string
+	snapshotid      string
+	revision        int
+	password        string
+	preference      *duplicacy.Preference
+	repository      string
+	mu              sync.Mutex
+	cache           DpfsKvStore
 }
 
 // Nicer names for fuse errors/return codes

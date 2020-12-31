@@ -133,4 +133,13 @@ func (self *Dpfs) Init() {
 	self.password = storagePassword
 	self.config = config
 	self.repository = repository
+
+	self.chunkDownloader = duplicacy.CreateChunkDownloader(
+		self.config,
+		self.storage,
+		nil, /* no cache */
+		false,
+		1,
+		false,
+	)
 }

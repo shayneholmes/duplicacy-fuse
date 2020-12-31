@@ -204,7 +204,7 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 }
 
 func (self *Dpfs) createBackupManager(snapshotid string) (*duplicacy.BackupManager, error) {
-	manager := duplicacy.CreateBackupManager(snapshotid, self.storage, self.repository, self.password, self.preference.NobackupFile, self.preference.FiltersFile)
+	manager := duplicacy.CreateBackupManager(snapshotid, self.storage, self.repository, self.password, self.preference.NobackupFile, self.preference.FiltersFile, false)
 	if manager == nil {
 		return nil, fmt.Errorf("manager was nil")
 	}
