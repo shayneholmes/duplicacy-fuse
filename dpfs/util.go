@@ -250,9 +250,13 @@ func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid 
 }
 
 func (self *Dpfs) findFile(snapshotid string, revision int, filepath string) (*duplicacy.Entry, error) {
-	// should we update our cache here?
-	// this should never be run before something that caches revision contents
 	filepath = strings.TrimPrefix(filepath, "/")
+
+	// Ensure we have a valid cache. This may be called before the revision
+	// contents are fetched, for example if the service is started with a
+	// snapshot and revision from the command line.
+
+	self.cacheRevisionFiles(snapshotid, revision)
 
 	// Use our cache
 	return self.cache.GetEntry(key(snapshotid, revision, filepath))
