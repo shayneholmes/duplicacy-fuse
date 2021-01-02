@@ -1,8 +1,6 @@
 package dpfs
 
 import (
-	"encoding/hex"
-
 	duplicacy "github.com/gilbertchen/duplicacy/src"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -81,12 +79,12 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 		if lastChunkHash == chunkHash {
 			chunk = lastChunk
 		} else {
-			logger.
-				WithField("chunk", i).
-				WithField("chunkHash", hex.EncodeToString([]byte(chunkHash))).
-				Debug("downloading new chunk")
 			chunkIndex := self.chunkDownloader.AddChunk(chunkHash)
 			chunk = self.chunkDownloader.WaitForChunk(chunkIndex)
+			logger.
+				WithField("chunk", i).
+				WithField("chunkID", chunk.GetID()).
+				Debug("fetched new chunk")
 		}
 
 		fileChunk := chunk.GetBytes()[fileChunkStart:fileChunkEnd]
