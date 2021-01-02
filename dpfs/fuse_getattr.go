@@ -35,11 +35,12 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 			key := []byte(fmt.Sprintf("revision-info:%s:%d", info.snapshotid, info.revision))
 			snap, err := self.cache.GetSnapshot(key)
 			if err != nil {
-				logger.WithError(err).Warning("not a valid snapshot or revision")
-				return NoSuchFileOrDirectory
-			}
-			stat.Mtim = fuse.Timespec{
-				Sec: snap.StartTime,
+				// We haven't cached the revision info, so we can't provide a timestamp.
+				logger.WithField("key", string(key)).WithError(err).Warning("snapshot info not found in cache")
+			} else {
+				stat.Mtim = fuse.Timespec{
+					Sec: snap.StartTime,
+				}
 			}
 		}
 		stat.Mode = fuse.S_IFDIR | 0555
