@@ -19,14 +19,14 @@ func main() {
 	var repository, snapshotid, storageName, storagePassword, loglevel, cachedir string
 	var revision int
 	var debug, all, cleancache bool
-	outargs, err := fuse.OptParse(os.Args, "repository=%s storage=%s snapshot=%s revision=%d password=%s loglevel=%s cachedir=%s debug all cleancache", &repository, &storageName, &snapshotid, &revision, &storagePassword, &loglevel, &cachedir, &debug, &all, &cleancache)
+	outargs, err := fuse.OptParse(os.Args[1:], "repository=%s storage=%s snapshot=%s revision=%d password=%s loglevel=%s cachedir=%s debug all cleancache", &repository, &storageName, &snapshotid, &revision, &storagePassword, &loglevel, &cachedir, &debug, &all, &cleancache)
 	if err != nil {
 		log.WithError(err).Fatal("arg error")
 	}
-	if len(outargs) != 2 {
-		log.Fatalf("Expected just one arg, but got: %v", outargs[:1])
-	}
-	log.Errorf("Calling with args: %v", outargs[1:])
 
-	host.Mount("", outargs[1:])
+	mountpoint := outargs[len(outargs)-1]
+	fuseargs := outargs[0 : len(outargs)-1]
+	log.Warnf("Calling with mountpoint %v and args: %v", mountpoint, fuseargs)
+
+	host.Mount(mountpoint, fuseargs)
 }
