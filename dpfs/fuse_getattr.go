@@ -56,6 +56,10 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 	if entry.IsDir() {
 		logger.Debug("directory")
 		stat.Mode = fuse.S_IFDIR | entry.Mode
+	} else if entry.IsLink() {
+		logger.WithField("size", len(entry.Link)).Debug("symlink")
+		stat.Mode = fuse.S_IFLNK | entry.Mode
+		stat.Size = int64(len(entry.Link))
 	} else {
 		logger.WithField("size", entry.Size).Debug("file")
 		stat.Mode = fuse.S_IFREG | entry.Mode
