@@ -25,7 +25,7 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 	if info.filepath == "" || info.filepath == "/" {
 		exists, _, _, err := self.storage.GetFileInfo(0, info.String())
 		if !exists || err != nil {
-			logger.WithError(err).Warning("not a valid snapshot or revision")
+			logger.WithError(err).Debug("not a valid snapshot or revision")
 			return NoSuchFileOrDirectory
 		}
 		logger.Debug("is root or first level")
