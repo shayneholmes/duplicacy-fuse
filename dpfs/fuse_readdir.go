@@ -83,7 +83,7 @@ func (self *Dpfs) Readdir(path string,
 		// First, make sure that this snapshot has its revisions cached.
 		if err := self.cacheSnapshotRevisions(info.snapshotid); err != nil {
 			logger.WithError(err).Warning("error caching snapshot revisions")
-			return -fuse.ENOSYS
+			return NotImplemented
 		}
 		prefix := []byte(fmt.Sprintf("revision-info:%s:", info.snapshotid))
 		if err := self.cache.Scan(prefix, func(key []byte) error {
@@ -104,7 +104,7 @@ func (self *Dpfs) Readdir(path string,
 	files, _, err := self.storage.ListFiles(0, info.String()+"/")
 	if err != nil {
 		logger.WithError(err).Warning("error listing files")
-		return -fuse.ENOSYS
+		return NotImplemented
 	}
 
 	for _, v := range files {
