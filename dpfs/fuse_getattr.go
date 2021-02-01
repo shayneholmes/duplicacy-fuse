@@ -47,6 +47,13 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 		return 0
 	}
 
+	// update cache before finding file
+	err := self.cacheRevisionFiles(info.snapshotid, info.revision)
+	if err != nil {
+		logger.WithError(err).Debug("cacheRevisionFiles")
+		return 0
+	}
+
 	entry, err := self.findFile(info.snapshotid, info.revision, info.filepath)
 	if err != nil {
 		logger.WithError(err).Debug()
