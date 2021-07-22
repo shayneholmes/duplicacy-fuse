@@ -50,7 +50,7 @@ duplicacy-fuse <mount point> [options]
 
   `-o revision=<number>` : Which revision to mount. Cannot be specified when the `all` is specified. **Currently not working**
 
-  `-o cachedir=<dir>` : Where to do caching via the KV store (currently uses [bitcask](https://github.com/prologic/bitcask)) for revision contents. Defaults to `$HOME/.duplicacy-fuse` on Linux and `%USERPROFILE%\.duplicacy-fuse` on Windows.
+  `-o cachedir=<dir>` : Where to do caching via the KV store (currently uses [bitcask](https://git.mills.io/prologic/bitcask)) for revision contents. Defaults to `$HOME/.duplicacy-fuse` on Linux and `%USERPROFILE%\.duplicacy-fuse` on Windows.
 
   `-o cleancache` : Deletes cache contents on start.
 

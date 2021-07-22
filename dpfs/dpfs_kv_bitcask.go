@@ -2,7 +2,7 @@ package dpfs
 
 import (
 	duplicacy "github.com/gilbertchen/duplicacy/src"
-	"github.com/prologic/bitcask"
+	"git.mills.io/prologic/bitcask"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 )
