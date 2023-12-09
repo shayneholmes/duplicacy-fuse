@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/OpenPeeDeeP/xdg v1.0.0
 	github.com/billziss-gh/cgofuse v1.2.0
-	github.com/gilbertchen/duplicacy v2.3.0+incompatible
+	github.com/gilbertchen/duplicacy v2.7.2+incompatible
 	github.com/prologic/bitcask v0.3.5
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.4.2

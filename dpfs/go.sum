@@ -83,6 +83,8 @@ github.com/gilbertchen/azure-sdk-for-go v14.1.1+incompatible h1:asjfGVhXPR26lCTW
 github.com/gilbertchen/azure-sdk-for-go v14.1.1+incompatible/go.mod h1:qsVRCpBUm2l0eMUeI9wZ47yzra2+lv2YkGhMZpzBVUc=
 github.com/gilbertchen/duplicacy v2.3.0+incompatible h1:CNj/K/E6auVlGeV+4+Z4mV5AEZxi11AyWVlo4lOIW/I=
 github.com/gilbertchen/duplicacy v2.3.0+incompatible/go.mod h1:rmFYsg25n1kkQmhS3+Mm4xH5c7wQ40DWa5pSVf0zKR4=
+github.com/gilbertchen/duplicacy v2.7.2+incompatible h1:boqtfOvovu3T/+ffix/I+XKqojjq0mxt9IQz4J07lk0=
+github.com/gilbertchen/duplicacy v2.7.2+incompatible/go.mod h1:rmFYsg25n1kkQmhS3+Mm4xH5c7wQ40DWa5pSVf0zKR4=
 github.com/gilbertchen/go-dropbox v0.0.0-20160206021034-90711b603312 h1:uCwPNd59AAwbhXYyW/kafh/1QPJj1SrGSnJ9U6Wg4GE=
 github.com/gilbertchen/go-dropbox v0.0.0-20160206021034-90711b603312/go.mod h1:85+2CRHC/klHy4vEM+TYtbhDo2wMjPa4JNdVzUHsDIk=
 github.com/gilbertchen/go-ole v1.2.0 h1:ay65uwxo6w8UVOxN0+fuCqUXGaXxbmkGs5m4uY6e1Zw=
