@@ -40,7 +40,7 @@ require (
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/gilbertchen/azure-sdk-for-go v14.1.1+incompatible // indirect
 	github.com/gilbertchen/duplicacy v2.7.2+incompatible // indirect
-	github.com/gilbertchen/go-dropbox v0.0.0-20230321030224-087ef8db1916 // indirect
+	github.com/gilbertchen/go-dropbox v0.0.0-20201103213208-2233fa1dd846 // indirect
 	github.com/gilbertchen/go-ole v1.2.0 // indirect
 	github.com/gilbertchen/goamz v0.0.0-20170712012135-eada9f4e8cc2 // indirect
 	github.com/gilbertchen/gopass v0.0.0-20170109162249-bf9dde6d0d2c // indirect

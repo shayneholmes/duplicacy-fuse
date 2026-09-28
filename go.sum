@@ -126,8 +126,8 @@ github.com/gilbertchen/azure-sdk-for-go v14.1.1+incompatible h1:asjfGVhXPR26lCTW
 github.com/gilbertchen/azure-sdk-for-go v14.1.1+incompatible/go.mod h1:qsVRCpBUm2l0eMUeI9wZ47yzra2+lv2YkGhMZpzBVUc=
 github.com/gilbertchen/duplicacy v2.7.2+incompatible h1:boqtfOvovu3T/+ffix/I+XKqojjq0mxt9IQz4J07lk0=
 github.com/gilbertchen/duplicacy v2.7.2+incompatible/go.mod h1:rmFYsg25n1kkQmhS3+Mm4xH5c7wQ40DWa5pSVf0zKR4=
-github.com/gilbertchen/go-dropbox v0.0.0-20230321030224-087ef8db1916 h1:7VpJiGwW51MB7yJ5e27Ar/ej8Yu7WuU2SEo409qPoNs=
-github.com/gilbertchen/go-dropbox v0.0.0-20230321030224-087ef8db1916/go.mod h1:85+2CRHC/klHy4vEM+TYtbhDo2wMjPa4JNdVzUHsDIk=
+github.com/gilbertchen/go-dropbox v0.0.0-20201103213208-2233fa1dd846 h1:btyfdBBVhYhyVpJWoU7ykYR+zLheDL1RXRjJ9LUgtC4=
+github.com/gilbertchen/go-dropbox v0.0.0-20201103213208-2233fa1dd846/go.mod h1:85+2CRHC/klHy4vEM+TYtbhDo2wMjPa4JNdVzUHsDIk=
 github.com/gilbertchen/go-ole v1.2.0 h1:ay65uwxo6w8UVOxN0+fuCqUXGaXxbmkGs5m4uY6e1Zw=
 github.com/gilbertchen/go-ole v1.2.0/go.mod h1:NNiozp7QxhyGmHxxNdFKIcVaINvJFTAjBJ2gYzh8fsg=
 github.com/gilbertchen/goamz v0.0.0-20170712012135-eada9f4e8cc2 h1:VDPwi3huqeJBtymgLOvPAP4S2gbSSK/UrWVwRbRAmnw=
@@ -357,6 +357,8 @@ github.com/subosito/gotenv v1.2.0/go.mod h1:N0PQaV/YGNqwC0u51sEeR/aUtSLEXKX9iv69
 github.com/tidwall/btree v0.2.2/go.mod h1:huei1BkDWJ3/sLXmO+bsCNELL+Bp2Kks9OLyQFkzvA8=
 github.com/tidwall/match v1.0.1/go.mod h1:LujAq0jyVjBy028G1WhWfIzbpQfMO8bBZ6Tyb0+pL9E=
 github.com/tidwall/redcon v1.4.0/go.mod h1:IGzxyoKE3Ea5AWIXo/ZHP+hzY8sWXaMKr7KlFgcWSZU=
+github.com/tj/go-dropbox v0.0.0-20171107035848-42dd2be3662d h1:kc+jLVc4Ivy9I77bYXJ1f2ZTAPInUxw7W/bqKW43g6Q=
+github.com/tj/go-dropbox v0.0.0-20171107035848-42dd2be3662d/go.mod h1:+zP9ykDCb5wHDCWHCuLZ2YhDAiy42yV+HAmI2BIocBI=
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/ugorji/go v1.1.4/go.mod h1:uQMGLiO92mf5W77hV/PUCpI3pbzQx3CRekS0kk+RGrc=
 github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec h1:DGmKwyZwEB8dI7tbLt/I/gQuP559o/0FrAkHKlQM/Ks=
