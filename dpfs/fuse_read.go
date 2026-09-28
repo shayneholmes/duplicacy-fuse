@@ -79,8 +79,10 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 		if lastChunkHash == chunkHash {
 			chunk = lastChunk
 		} else {
-			chunkIndex := self.chunkDownloader.AddChunk(chunkHash)
-			chunk = self.chunkDownloader.WaitForChunk(chunkIndex)
+			chunk = self.chunkOperator.Download(chunkHash,
+				0,     // chunkIndex
+				false, // isMetadata
+			)
 			logger.
 				WithField("chunk", i).
 				WithField("chunkID", chunk.GetID()).

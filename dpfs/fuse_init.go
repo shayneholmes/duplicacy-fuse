@@ -134,12 +134,17 @@ func (self *Dpfs) Init() {
 	self.config = config
 	self.repository = repository
 
-	self.chunkDownloader = duplicacy.CreateChunkDownloader(
+	self.chunkOperator = duplicacy.CreateChunkOperator(
 		self.config,
 		self.storage,
 		nil, /* no cache */
-		false,
-		1,
-		false,
+		/* showStatistics= */ false,
+		/* rewriteChunks= */ false,
+		/* threads= */ 1,
+		/* allowFailures= */ false,
+	)
+
+	self.chunkDownloader = duplicacy.CreateChunkDownloader(
+		self.chunkOperator,
 	)
 }

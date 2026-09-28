@@ -12,6 +12,7 @@ type Dpfs struct {
 	fuse.FileSystemBase
 	config          *duplicacy.Config
 	storage         duplicacy.Storage
+	chunkOperator   *duplicacy.ChunkOperator
 	chunkDownloader *duplicacy.ChunkDownloader
 	root            string
 	snapshotid      string

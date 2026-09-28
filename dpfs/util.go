@@ -185,16 +185,14 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 		return fmt.Errorf("problem dowloading snapshot: %w", err)
 	}
 
-	for _, entry := range snap.Files {
+	snap.ListRemoteFiles(self.config, self.chunkOperator, func(entry *duplicacy.Entry) bool {
 		k := key(snapshotid, revision, entry.Path)
-		if err != nil {
-			return fmt.Errorf("problem encoding entry (%s): %w", k, err)
-		}
 		if err := self.cache.PutEntry(k, entry); err != nil {
 			log.WithError(err).Debug(string(k))
-			return fmt.Errorf("problem with Put(%s): %w", k, err)
+			return false
 		}
-	}
+		return true
+	})
 
 	if err := self.cache.PutString(is_cached_key, isCached); err != nil {
 		return fmt.Errorf("problem with Put(%s): %w", is_cached_key, err)
@@ -240,8 +238,8 @@ func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid 
 	if err != nil {
 		return nil, err
 	}
-	if !manager.SnapshotManager.DownloadSnapshotContents(snap, patterns, attributesNeeded) {
-		return nil, fmt.Errorf("DownloadSnapshotContents was false")
+	if !manager.SnapshotManager.DownloadSnapshotSequences(snap) {
+		return nil, fmt.Errorf("DownloadSnapshotSequences was false")
 	}
 
 	self.lastSnap = snap
