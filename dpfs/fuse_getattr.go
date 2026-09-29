@@ -56,7 +56,10 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 
 	entry, err := self.findFile(info.snapshotid, info.revision, info.filepath)
 	if err != nil {
-		logger.WithError(err).Debug()
+		logger.
+			WithField("key", key(info.snapshotid, info.revision, info.filepath)).
+			WithError(err).
+			Debug()
 		return NoSuchFileOrDirectory
 	}
 

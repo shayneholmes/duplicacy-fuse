@@ -37,8 +37,6 @@ func (self *Dpfs) Readdir(path string,
 		}
 		snaplogger.Debug("cacheRevisionFiles done")
 
-		prefix := key(info.snapshotid, info.revision, strings.TrimPrefix(info.filepath, "/"))
-
 		// For non-root paths in a revision do extra checks
 		if info.filepath != "" && info.filepath != "/" {
 			// Make sure it actually exists
@@ -51,11 +49,9 @@ func (self *Dpfs) Readdir(path string,
 			if !entry.IsDir() {
 				return NotDirectory
 			}
-
-			// Since this is a non-root path, we can add a slash to the prefix to
-			// find only items inside the path (and not the path itself).
-			prefix = append(prefix, '/')
 		}
+
+		prefix := key_prefix(info.snapshotid, info.revision, strings.TrimPrefix(info.filepath, "/"))
 
 		snaplogger.WithField("prefix", string(prefix)).Debug()
 		if err := self.cache.Scan(prefix, func(key []byte) error {

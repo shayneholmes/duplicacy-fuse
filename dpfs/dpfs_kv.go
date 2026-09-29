@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	duplicacy "github.com/gilbertchen/duplicacy/src"
@@ -40,8 +41,23 @@ func NewDpfsKv(url string) (kv DpfsKvStore, err error) {
 	return nil, fmt.Errorf("unsupported kv store")
 }
 
-func key(snapshotid string, revision int, path string) []byte {
-	return []byte(fmt.Sprintf("%s:%d:%s", snapshotid, revision, strings.TrimSuffix(path, "/")))
+// key generates a unique key for this file
+func key(snapshotid string, revision int, filePath string) []byte {
+	// Follow the format SNAPSHOT:REV:PATH:FILE, which has the useful property
+	// that querying the prefix SNAPSHOT:REV:PATH: finds only direct descendants
+	// of a path.
+	dir, file := path.Split(strings.Trim(filePath, "/"))
+	return []byte(fmt.Sprintf("%s:%d:%s:%s",
+		snapshotid,
+		revision,
+		strings.TrimSuffix(dir, "/"),
+		file))
+}
+
+// key_prefix returns a suitable prefix to use in querying for direct
+// descendants of a given path.
+func key_prefix(snapshotid string, revision int, dirPath string) []byte {
+	return []byte(fmt.Sprintf("%s:%d:%s:", snapshotid, revision, strings.Trim(dirPath, "/")))
 }
 
 func encodeSnapshot(snapshot *duplicacy.Snapshot) (output []byte, err error) {
