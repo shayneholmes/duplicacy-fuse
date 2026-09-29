@@ -183,30 +183,6 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	logger.
 		WithField("snap.NumberOfFiles", snap.NumberOfFiles).
 		WithField("sequencelength", len(snap.FileSequence)).
-		Debug("quick counting files")
-
-	quickFileCount := 0
-	snap.ListRemoteFiles(self.config, self.chunkOperator, func(entry *duplicacy.Entry) bool {
-		quickFileCount++
-		if quickFileCount%10000 == 0 {
-			// Intermittent status updates
-			logger.
-				WithField("snap.NumberOfFiles", snap.NumberOfFiles).
-				WithField("fileCountSoFar", quickFileCount).
-				WithField("path", entry.Path).
-				Debug("still quick counting files")
-		}
-		return true
-	})
-
-	logger.
-		WithField("snap.NumberOfFiles", snap.NumberOfFiles).
-		WithField("sequencelength", len(snap.FileSequence)).
-		Debug("quick counted files")
-
-	logger.
-		WithField("snap.NumberOfFiles", snap.NumberOfFiles).
-		WithField("sequencelength", len(snap.FileSequence)).
 		Debug("caching files")
 	maxSize := 0
 	fileCount := 0
