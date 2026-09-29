@@ -33,10 +33,6 @@ func parseRevision(component string) (rev int, err error) {
 // the "root" of the mount in self.snapshotid and self.revision. Returns an
 // error if the revision is invalid — that is, path provides it, but it is
 func (self *Dpfs) newpathInfo(filepath string) (p pathInfo, err error) {
-	logger := log.WithFields(log.Fields{
-		"filepath": filepath,
-	})
-
 	split := strings.Split(strings.TrimPrefix(filepath, "/"), "/")
 
 	if self.snapshotid != "" {
@@ -50,19 +46,12 @@ func (self *Dpfs) newpathInfo(filepath string) (p pathInfo, err error) {
 	} else if len(split) > 0 {
 		p.revision, err = parseRevision(split[0]) // This will set an error if it's an invalid value
 		split = split[1:]
-		logger.
-			WithField("err", err).
-			WithField("revision", p.revision).
-			Debug("Getting revision from path")
 	} else {
 		// Revision isn't specified; leave it as 0
 		return
 	}
 
 	p.filepath = "/" + strings.Join(split, "/")
-	logger.
-		WithField("filepath", p.filepath).
-		Debug("Remaining component")
 
 	return
 }
