@@ -10,7 +10,11 @@ import (
 
 // Getattr satisfies the Getattr implementation from fuse.FileSystemInterface
 func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
-	info := self.newpathInfo(path)
+	info, err := self.newpathInfo(path)
+	if err != nil {
+		return NoSuchFileOrDirectory
+	}
+
 	logger := log.WithFields(log.Fields{
 		"path":       path,
 		"op":         "Getattr",
@@ -48,7 +52,7 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 	}
 
 	// update cache before finding file
-	err := self.cacheRevisionFiles(info.snapshotid, info.revision)
+	err = self.cacheRevisionFiles(info.snapshotid, info.revision)
 	if err != nil {
 		logger.WithError(err).Debug("cacheRevisionFiles")
 		return 0

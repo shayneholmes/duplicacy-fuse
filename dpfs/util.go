@@ -17,9 +17,21 @@ type pathInfo struct {
 
 const isCached = "cached ok"
 
+func parseRevision(component string) (rev int, err error) {
+	rev, err = strconv.Atoi(component)
+	if err != nil {
+		return
+	}
+	if rev < 1 {
+		err = fmt.Errorf("%s is not a valid revision number", component)
+		return
+	}
+	return
+}
+
 // newpathInfo takes a filepath and derives the snapshotid, revision and path taking into account
 // the "root" of the mount in self.snapshotid and self.revision
-func (self *Dpfs) newpathInfo(filepath string) (p pathInfo) {
+func (self *Dpfs) newpathInfo(filepath string) (p pathInfo, err error) {
 	// revision and snapshotid is set so filepath is just filepath
 	if self.snapshotid != "" && self.revision != 0 {
 		p.snapshotid = self.snapshotid
@@ -33,7 +45,7 @@ func (self *Dpfs) newpathInfo(filepath string) (p pathInfo) {
 		p.snapshotid = self.snapshotid
 		if split := strings.Split(filepath, "/"); len(split) > 1 {
 			if split[1] != "" {
-				p.revision, _ = strconv.Atoi(split[1])
+				p.revision, err = parseRevision(split[1])
 			}
 			if len(split) > 2 {
 				p.filepath = "/" + strings.Join(split[2:], "/")
@@ -51,10 +63,10 @@ func (self *Dpfs) newpathInfo(filepath string) (p pathInfo) {
 		p.snapshotid = split[1]
 	case 3:
 		p.snapshotid = split[1]
-		p.revision, _ = strconv.Atoi(split[2])
+		p.revision, err = parseRevision(split[2])
 	default:
 		p.snapshotid = split[1]
-		p.revision, _ = strconv.Atoi(split[2])
+		p.revision, err = parseRevision(split[2])
 		p.filepath = "/" + strings.Join(split[3:], "/")
 	}
 
@@ -156,13 +168,6 @@ func (self *Dpfs) cacheRevisionInfo(manager *duplicacy.BackupManager, snapshotid
 }
 
 func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
-	if revision == 0 {
-		// The number 0 is never a valid revision number; it's probably a sign that
-		// we're trying to parse some non-numeric string as a revision. Return
-		// straightaway, since there's nothing to cache here.
-		return nil
-	}
-
 	self.mu.Lock()
 	defer self.mu.Unlock()
 

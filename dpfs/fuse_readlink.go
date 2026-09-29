@@ -9,7 +9,11 @@ import (
 func (self *Dpfs) Readlink(path string) (errc int, link string) {
 	errc = NoSuchFileOrDirectory
 
-	info := self.newpathInfo(path)
+	info, err := self.newpathInfo(path)
+	if err != nil {
+		return
+	}
+
 	logger := log.WithFields(log.Fields{
 		"path":       path,
 		"op":         "Readlink",

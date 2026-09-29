@@ -20,7 +20,10 @@ func (self *Dpfs) Readdir(path string,
 	fill(".", nil, 0)
 	fill("..", nil, 0)
 
-	info := self.newpathInfo(path)
+	info, err := self.newpathInfo(path)
+	if err != nil {
+		return NoSuchFileOrDirectory
+	}
 
 	logger := log.WithField("path", path).WithField("op", "Readdir").WithField("uuid", uuid.NewV4().String())
 

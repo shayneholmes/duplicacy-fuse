@@ -21,7 +21,11 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 
 	// Check cache
 
-	info := self.newpathInfo(path)
+	info, err := self.newpathInfo(path)
+	if err != nil {
+		logger.WithError(err).Debug()
+		return 0
+	}
 
 	file, err := self.findFile(info.snapshotid, info.revision, info.filepath)
 	if err != nil {

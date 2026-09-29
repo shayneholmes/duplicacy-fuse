@@ -16,7 +16,11 @@ func (self *Dpfs) Open(path string, flags int) (errc int, fh uint64) {
 			"id":   uuid.NewV4().String(),
 		})
 
-	info := self.newpathInfo(path)
+	info, err := self.newpathInfo(path)
+	if err != nil {
+		logger.WithError(err).Debug()
+		return NoSuchFileOrDirectory, 0
+	}
 
 	entry, err := self.findFile(info.snapshotid, info.revision, info.filepath)
 	if err != nil {

@@ -30,7 +30,7 @@ func TestDpfs_newpathInfo(t *testing.T) {
 		{"&Dpfs{snapshotid: \"id\", revision: 3}", &Dpfs{snapshotid: "id", revision: 3}, "/dir/file.txt", pathInfo{snapshotid: "id", revision: 3, filepath: "/dir/file.txt"}, "snapshots/id/3/dir/file.txt"},
 	}
 	for _, tt := range tests {
-		got := tt.self.newpathInfo(tt.filepath)
+		got, _ := tt.self.newpathInfo(tt.filepath)
 		assert.Equal(t, tt.want, got, tt.name)
 		assert.Equal(t, tt.str, got.String(), tt.name)
 	}
