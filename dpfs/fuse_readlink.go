@@ -24,7 +24,7 @@ func (self *Dpfs) Readlink(path string) (errc int, link string) {
 		"id":         uuid.NewV4().String(),
 	})
 
-	if info.filepath == "" || info.filepath == "/" {
+	if info.filepath == "" {
 		// root and first level can't be symlinks
 		return
 	}

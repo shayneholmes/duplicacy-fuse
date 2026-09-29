@@ -51,7 +51,7 @@ func (self *Dpfs) newpathInfo(filepath string) (p pathInfo, err error) {
 		return
 	}
 
-	p.filepath = "/" + strings.Join(split, "/")
+	p.filepath = strings.Join(split, "/")
 
 	return
 }
@@ -294,7 +294,6 @@ func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid 
 func (self *Dpfs) findFile(snapshotid string, revision int, filepath string) (*duplicacy.Entry, error) {
 	// should we update our cache here?
 	// this should never be run before something that caches revision contents
-	filepath = strings.TrimPrefix(filepath, "/")
 
 	// Use our cache
 	return self.cache.GetEntry(key(snapshotid, revision, filepath))
