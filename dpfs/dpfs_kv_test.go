@@ -1,8 +1,10 @@
 package dpfs
 
 import (
+	"os"
 	"testing"
 
+	duplicacy "github.com/gilbertchen/duplicacy/src"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,23 +25,22 @@ func Test_key(t *testing.T) {
 
 func Test_encodedecode(t *testing.T) {
 	tests := []struct {
-		input   DpfsKvStoreEntry
+		input   *duplicacy.Entry
 		wantErr bool
 	}{
-		{DpfsKvStoreEntry{
-			Size:  100,
-			Time:  100,
-			Mode:  0555,
-			IsDir: false,
+		{&duplicacy.Entry{
+			Size: 100,
+			Time: 100,
+			Mode: 0555 | uint32(os.ModeDir),
 		}, false},
 	}
 	for _, tt := range tests {
-		enc, err := encode(tt.input)
+		enc, err := encodeEntry(tt.input)
 		if tt.wantErr {
 			assert.NotNil(t, err)
 		} else {
 			if assert.Nil(t, err) {
-				dec, err := decode(enc)
+				dec, err := decodeEntry(enc)
 				if assert.Nil(t, err) {
 					assert.Equal(t, tt.input, dec)
 				}
