@@ -30,45 +30,39 @@ func parseRevision(component string) (rev int, err error) {
 }
 
 // newpathInfo takes a filepath and derives the snapshotid, revision and path taking into account
-// the "root" of the mount in self.snapshotid and self.revision
+// the "root" of the mount in self.snapshotid and self.revision. Returns an
+// error if the revision is invalid — that is, path provides it, but it is
 func (self *Dpfs) newpathInfo(filepath string) (p pathInfo, err error) {
-	// revision and snapshotid is set so filepath is just filepath
-	if self.snapshotid != "" && self.revision != 0 {
-		p.snapshotid = self.snapshotid
-		p.revision = self.revision
-		p.filepath = filepath
-		return
-	}
+	logger := log.WithFields(log.Fields{
+		"filepath": filepath,
+	})
 
-	// snapshotid is set so filepath may contain revision as first entry followed by filepath
+	split := strings.Split(strings.TrimPrefix(filepath, "/"), "/")
+
 	if self.snapshotid != "" {
 		p.snapshotid = self.snapshotid
-		if split := strings.Split(filepath, "/"); len(split) > 1 {
-			if split[1] != "" {
-				p.revision, err = parseRevision(split[1])
-			}
-			if len(split) > 2 {
-				p.filepath = "/" + strings.Join(split[2:], "/")
-			}
-		}
+	} else if len(split) > 0 {
+		p.snapshotid, split = split[0], split[1:]
+	}
+
+	if self.revision != 0 {
+		p.revision = self.revision
+	} else if len(split) > 0 {
+		p.revision, err = parseRevision(split[0]) // This will set an error if it's an invalid value
+		split = split[1:]
+		logger.
+			WithField("err", err).
+			WithField("revision", p.revision).
+			Debug("Getting revision from path")
+	} else {
+		// Revision isn't specified; leave it as 0
 		return
 	}
 
-	// neither is set so filepath may contain snapshotid followed by revision followed by filepath
-	switch split := strings.Split(filepath, "/"); len(split) {
-	case 0, 1:
-		// this should not happen
-		return
-	case 2:
-		p.snapshotid = split[1]
-	case 3:
-		p.snapshotid = split[1]
-		p.revision, err = parseRevision(split[2])
-	default:
-		p.snapshotid = split[1]
-		p.revision, err = parseRevision(split[2])
-		p.filepath = "/" + strings.Join(split[3:], "/")
-	}
+	p.filepath = "/" + strings.Join(split, "/")
+	logger.
+		WithField("filepath", p.filepath).
+		Debug("Remaining component")
 
 	return
 }
