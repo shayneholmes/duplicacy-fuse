@@ -22,7 +22,7 @@ type DpfsKvStore interface {
 	Has(key []byte) bool
 	Put(key, value []byte) error
 	PutString(key []byte, value string) error
-	PutEntry(key []byte, entry *duplicacy.Entry) error
+	PutEntry(key []byte, entry *duplicacy.Entry) (int, error)
 	PutSnapshot(key []byte, entry *duplicacy.Snapshot) error
 	Scan(prefix []byte, f func(key []byte) error) error
 }

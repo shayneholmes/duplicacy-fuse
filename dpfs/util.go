@@ -193,7 +193,7 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 
 	snap.ListRemoteFiles(self.config, self.chunkOperator, func(entry *duplicacy.Entry) bool {
 		k := key(snapshotid, revision, entry.Path)
-		if err := self.cache.PutEntry(k, entry); err != nil {
+		if _, err := self.cache.PutEntry(k, entry); err != nil {
 			log.WithError(err).Debug(string(k))
 			return false
 		}

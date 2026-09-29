@@ -75,12 +75,12 @@ func (kv *bitcaskKv) PutString(key []byte, value string) error {
 	return kv.db.Put(key, []byte(value))
 }
 
-func (kv *bitcaskKv) PutEntry(key []byte, entry *duplicacy.Entry) error {
+func (kv *bitcaskKv) PutEntry(key []byte, entry *duplicacy.Entry) (int, error) {
 	value, err := encodeEntry(entry)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return kv.db.Put(key, value)
+	return len(value), kv.db.Put(key, value)
 }
 
 func (kv *bitcaskKv) PutSnapshot(key []byte, snapshot *duplicacy.Snapshot) error {
