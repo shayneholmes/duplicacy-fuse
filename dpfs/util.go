@@ -180,14 +180,87 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 		return fmt.Errorf("problem dowloading snapshot: %w", err)
 	}
 
+	logger.
+		WithField("snap.NumberOfFiles", snap.NumberOfFiles).
+		WithField("sequencelength", len(snap.FileSequence)).
+		Debug("quick counting files")
+
+	quickFileCount := 0
 	snap.ListRemoteFiles(self.config, self.chunkOperator, func(entry *duplicacy.Entry) bool {
-		k := key(snapshotid, revision, entry.Path)
-		if _, err := self.cache.PutEntry(k, entry); err != nil {
-			log.WithError(err).Debug(string(k))
-			return false
+		quickFileCount++
+		if quickFileCount%10000 == 0 {
+			// Intermittent status updates
+			logger.
+				WithField("snap.NumberOfFiles", snap.NumberOfFiles).
+				WithField("fileCountSoFar", quickFileCount).
+				WithField("path", entry.Path).
+				Debug("still quick counting files")
 		}
 		return true
 	})
+
+	logger.
+		WithField("snap.NumberOfFiles", snap.NumberOfFiles).
+		WithField("sequencelength", len(snap.FileSequence)).
+		Debug("quick counted files")
+
+	logger.
+		WithField("snap.NumberOfFiles", snap.NumberOfFiles).
+		WithField("sequencelength", len(snap.FileSequence)).
+		Debug("caching files")
+	maxSize := 0
+	fileCount := 0
+	dirCount := 0
+	entryCount := 0
+	totalSize := 0
+
+	snap.ListRemoteFiles(self.config, self.chunkOperator, func(entry *duplicacy.Entry) bool {
+		entryCount++
+		if entry.IsDir() {
+			dirCount++
+		} else {
+			fileCount++
+		}
+		k := key(snapshotid, revision, entry.Path)
+		if n, err := self.cache.PutEntry(k, entry); err != nil {
+			log.WithError(err).Debug(string(k))
+			return false
+		} else {
+			totalSize += n
+			if n > maxSize {
+				maxSize = n
+			}
+			if n > 10000 {
+				logger.
+					WithField("fileCountSoFar", fileCount).
+					WithField("dirCountSoFar", dirCount).
+					WithField("entryCountSoFar", entryCount).
+					WithField("path", entry.Path).
+					WithField("size", n).
+					Debug("big file")
+			}
+		}
+		if fileCount%10000 == 0 {
+			// Intermittent status updates
+			logger.
+				WithField("snap.NumberOfFiles", snap.NumberOfFiles).
+				WithField("fileCountSoFar", fileCount).
+				WithField("dirCountSoFar", dirCount).
+				WithField("entryCountSoFar", entryCount).
+				WithField("path", entry.Path).
+				WithField("sizeSoFar", totalSize).
+				Debug("still caching files")
+		}
+		return true
+	})
+
+	logger.
+		WithField("snap.NumberOfFiles", snap.NumberOfFiles).
+		WithField("fileCount", fileCount).
+		WithField("dirCount", dirCount).
+		WithField("entryCount", entryCount).
+		WithField("sequencelength", len(snap.FileSequence)).
+		Debug("done caching files")
 
 	if err := self.cache.PutString(is_cached_key, isCached); err != nil {
 		return fmt.Errorf("problem with Put(%s): %w", is_cached_key, err)

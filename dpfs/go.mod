@@ -17,9 +17,11 @@ require (
 	cloud.google.com/go v0.50.0 // indirect
 	cloud.google.com/go/storage v1.5.0 // indirect
 	github.com/Azure/azure-sdk-for-go v39.0.0+incompatible // indirect
+	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.9.5 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.8.2 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.2.0 // indirect
+	github.com/Azure/go-autorest/autorest/mocks v0.4.3 // indirect
 	github.com/Azure/go-autorest/logger v0.1.0 // indirect
 	github.com/Azure/go-autorest/tracing v0.5.0 // indirect
 	github.com/BurntSushi/toml v0.3.1 // indirect

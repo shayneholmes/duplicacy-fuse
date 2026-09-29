@@ -44,8 +44,9 @@ github.com/Azure/go-autorest/autorest/date v0.3.0/go.mod h1:BI0uouVdmngYNUzGWeSY
 github.com/Azure/go-autorest/autorest/date v0.3.1 h1:o9Z8Jyt+VJJTCZ/UORishuHOusBwolhjokt9s5k8I4w=
 github.com/Azure/go-autorest/autorest/date v0.3.1/go.mod h1:Dz/RDmXlfiFFS/eW+b/xMUSFs1tboPVy6UjgADToWDM=
 github.com/Azure/go-autorest/autorest/mocks v0.4.1/go.mod h1:LTp+uSrOhSkaKrUy935gNZuuIPPVsHlr9DSOxSayd+k=
-github.com/Azure/go-autorest/autorest/mocks v0.4.2 h1:PGN4EDXnuQbojHbU0UWoNvmu9AGVwYHG9/fkDYhtAfw=
 github.com/Azure/go-autorest/autorest/mocks v0.4.2/go.mod h1:Vy7OitM9Kei0i1Oj+LvyAWMXJHeKH1MVlzFugfVrmyU=
+github.com/Azure/go-autorest/autorest/mocks v0.4.3 h1:GXOGHjM7L2PF7tOuB0BawXMK5govrcUt3mF0qD0Qh30=
+github.com/Azure/go-autorest/autorest/mocks v0.4.3/go.mod h1:Z5HZUetq7pVWST7gWM79R9uGOyxEqyw76Oua5q9PhfQ=
 github.com/Azure/go-autorest/logger v0.2.1/go.mod h1:T9E3cAhj2VqvPOtCYAvby9aBXkZmbF5NWuPV8+WeEW8=
 github.com/Azure/go-autorest/logger v0.2.2 h1:hYqBsEBywrrOSW24kkOCXRcKfKhK76OzLTfF+MYDE2o=
 github.com/Azure/go-autorest/logger v0.2.2/go.mod h1:I5fg9K52o+iuydlWfa9T5K6WFos9XYr9dYTFzpqgibw=
