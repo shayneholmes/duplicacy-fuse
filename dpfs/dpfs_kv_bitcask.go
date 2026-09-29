@@ -2,9 +2,9 @@ package dpfs
 
 import (
 	duplicacy "github.com/gilbertchen/duplicacy/src"
-	"github.com/prologic/bitcask"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
+	"go.mills.io/bitcask/v2"
 )
 
 type bitcaskKv struct {
@@ -46,7 +46,7 @@ func (kv *bitcaskKv) GetString(key []byte) (string, error) {
 		return "", err
 	}
 
-	return cast.ToStringE(value)
+	return cast.ToStringE([]byte(value))
 }
 
 func (kv *bitcaskKv) GetEntry(key []byte) (*duplicacy.Entry, error) {
@@ -92,5 +92,5 @@ func (kv *bitcaskKv) PutSnapshot(key []byte, snapshot *duplicacy.Snapshot) error
 }
 
 func (kv *bitcaskKv) Scan(prefix []byte, f func(key []byte) error) error {
-	return kv.db.Scan(prefix, f)
+	return kv.db.Scan(prefix, func(key bitcask.Key) error { return f([]byte(key)) })
 }
