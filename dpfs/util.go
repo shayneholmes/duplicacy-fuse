@@ -156,6 +156,13 @@ func (self *Dpfs) cacheRevisionInfo(manager *duplicacy.BackupManager, snapshotid
 }
 
 func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
+	if revision == 0 {
+		// The number 0 is never a valid revision number; it's probably a sign that
+		// we're trying to parse some non-numeric string as a revision. Return
+		// straightaway, since there's nothing to cache here.
+		return nil
+	}
+
 	self.mu.Lock()
 	defer self.mu.Unlock()
 
