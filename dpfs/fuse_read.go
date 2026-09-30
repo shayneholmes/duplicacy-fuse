@@ -84,7 +84,7 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 			chunk = lastChunk
 		} else {
 			chunk = self.chunkOperator.Download(chunkHash,
-				0,     // chunkIndex
+				i,     // chunkIndex
 				false, // isMetadata
 			)
 			logger.
