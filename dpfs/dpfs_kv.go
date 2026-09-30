@@ -12,6 +12,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type EntryBatch interface {
+	PutEntry(key []byte, entry *duplicacy.Entry) (int, error)
+}
+
 type DpfsKvStore interface {
 	Close() error
 	Delete(key []byte) error
@@ -22,7 +26,8 @@ type DpfsKvStore interface {
 	Has(key []byte) bool
 	Put(key, value []byte) error
 	PutString(key []byte, value string) error
-	PutEntry(key []byte, entry *duplicacy.Entry) (int, error)
+	CreateEntryBatch() EntryBatch
+	WriteEntryBatch(b EntryBatch) error
 	PutSnapshot(key []byte, entry *duplicacy.Snapshot) error
 	Scan(prefix []byte, f func(key []byte) error) error
 }

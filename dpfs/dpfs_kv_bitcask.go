@@ -1,11 +1,26 @@
 package dpfs
 
 import (
+	"fmt"
+
 	duplicacy "github.com/gilbertchen/duplicacy/src"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 	"go.mills.io/bitcask/v2"
 )
+
+type entryBatch struct {
+	batch *bitcask.Batch
+}
+
+func (b *entryBatch) PutEntry(key []byte, entry *duplicacy.Entry) (int, error) {
+	value, err := encodeEntry(entry)
+	if err != nil {
+		return 0, err
+	}
+	_, err = b.batch.Put(key, value)
+	return len(value), err
+}
 
 type bitcaskKv struct {
 	db *bitcask.Bitcask
@@ -75,12 +90,15 @@ func (kv *bitcaskKv) PutString(key []byte, value string) error {
 	return kv.db.Put(key, []byte(value))
 }
 
-func (kv *bitcaskKv) PutEntry(key []byte, entry *duplicacy.Entry) (int, error) {
-	value, err := encodeEntry(entry)
-	if err != nil {
-		return 0, err
+func (kv *bitcaskKv) CreateEntryBatch() EntryBatch {
+	return &entryBatch{batch: kv.db.Batch()}
+}
+
+func (kv *bitcaskKv) WriteEntryBatch(b EntryBatch) error {
+	if entryBatch, ok := b.(*entryBatch); ok {
+		return kv.db.WriteBatch(entryBatch.batch)
 	}
-	return len(value), kv.db.Put(key, value)
+	return fmt.Errorf("provided EntryBatch isn't a entryBatch")
 }
 
 func (kv *bitcaskKv) PutSnapshot(key []byte, snapshot *duplicacy.Snapshot) error {

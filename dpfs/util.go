@@ -190,6 +190,8 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	entryCount := 0
 	totalSize := 0
 
+	batch := self.cache.CreateEntryBatch()
+
 	snap.ListRemoteFiles(self.config, self.chunkOperator, func(entry *duplicacy.Entry) bool {
 		entryCount++
 		if entry.IsDir() {
@@ -198,7 +200,7 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 			fileCount++
 		}
 		k := key(snapshotid, revision, entry.Path)
-		if n, err := self.cache.PutEntry(k, entry); err != nil {
+		if n, err := batch.PutEntry(k, entry); err != nil {
 			log.WithError(err).Debug(string(k))
 			return false
 		} else {
@@ -229,6 +231,8 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 		}
 		return true
 	})
+
+	self.cache.WriteEntryBatch(batch)
 
 	logger.
 		WithField("snap.NumberOfFiles", snap.NumberOfFiles).
