@@ -7,21 +7,27 @@ import (
 	duplicacy "github.com/gilbertchen/duplicacy/src"
 )
 
+type revisionCacheKey struct {
+	snapshotid string
+	revision   int
+}
+
 // Dpfs is the Duplicacy filesystem type. This type satisfies the fuse.FileSystemInterface interace
 type Dpfs struct {
 	fuse.FileSystemBase
-	config          *duplicacy.Config
-	storage         duplicacy.Storage
-	chunkOperator   *duplicacy.ChunkOperator
-	chunkDownloader *duplicacy.ChunkDownloader
-	root            string
-	snapshotid      string
-	revision        int
-	password        string
-	preference      *duplicacy.Preference
-	repository      string
-	mu              sync.Mutex
-	cache           DpfsKvStore
+	config            *duplicacy.Config
+	storage           duplicacy.Storage
+	chunkOperator     *duplicacy.ChunkOperator
+	chunkDownloader   *duplicacy.ChunkDownloader
+	root              string
+	snapshotid        string
+	revision          int
+	password          string
+	preference        *duplicacy.Preference
+	repository        string
+	mu                sync.Mutex
+	cache             DpfsKvStore
+	verifiedRevisions map[revisionCacheKey]bool
 
 	// Cache a single snapshot
 	lastSnap *duplicacy.Snapshot
@@ -43,6 +49,8 @@ const (
 
 // NewDuplicacyfs creates an initial Dpfs struct
 func NewDuplicacyfs() *Dpfs {
-	self := Dpfs{}
+	self := Dpfs{
+		verifiedRevisions: make(map[revisionCacheKey]bool),
+	}
 	return &self
 }

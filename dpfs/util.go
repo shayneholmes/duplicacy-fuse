@@ -155,6 +155,13 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 
+	revisionCacheKey := revisionCacheKey{
+		snapshotid: snapshotid,
+		revision:   revision,
+	}
+	if self.verifiedRevisions[revisionCacheKey] {
+		return nil
+	}
 	logger := log.WithFields(log.Fields{
 		"snapshotid": snapshotid,
 		"revision":   revision,
@@ -236,6 +243,7 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	if err := self.cache.PutString(is_cached_key, isCached); err != nil {
 		return fmt.Errorf("problem with Put(%s): %w", is_cached_key, err)
 	}
+	self.verifiedRevisions[revisionCacheKey] = true
 
 	return nil
 }
