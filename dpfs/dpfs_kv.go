@@ -5,15 +5,14 @@ import (
 	"encoding/gob"
 	"fmt"
 	"os"
-	"path"
 	"strings"
 
 	duplicacy "github.com/gilbertchen/duplicacy/src"
 	log "github.com/sirupsen/logrus"
 )
 
-type EntryBatch interface {
-	PutEntry(key []byte, entry *duplicacy.Entry) (int, error)
+type EntriesBatch interface {
+	PutEntries(key []byte, entry []*duplicacy.Entry) (int, error)
 }
 
 type DpfsKvStore interface {
@@ -21,13 +20,13 @@ type DpfsKvStore interface {
 	Delete(key []byte) error
 	Get(key []byte) ([]byte, error)
 	GetString(key []byte) (string, error)
-	GetEntry(key []byte) (*duplicacy.Entry, error)
+	GetEntries(key []byte) ([]*duplicacy.Entry, error)
 	GetSnapshot(key []byte) (*duplicacy.Snapshot, error)
 	Has(key []byte) bool
 	Put(key, value []byte) error
 	PutString(key []byte, value string) error
-	CreateEntryBatch() EntryBatch
-	WriteEntryBatch(b EntryBatch) error
+	CreateEntryBatch() EntriesBatch
+	WriteEntriesBatch(b EntriesBatch) error
 	PutSnapshot(key []byte, entry *duplicacy.Snapshot) error
 	Scan(prefix []byte, f func(key []byte) error) error
 }
@@ -46,23 +45,14 @@ func NewDpfsKv(url string) (kv DpfsKvStore, err error) {
 	return nil, fmt.Errorf("unsupported kv store")
 }
 
-// key generates a unique key for this file
+// key generates a unique key for this directory
 func key(snapshotid string, revision int, filePath string) []byte {
-	// Follow the format SNAPSHOT:REV:PATH:FILE, which has the useful property
-	// that querying the prefix SNAPSHOT:REV:PATH: finds only direct descendants
-	// of a path.
-	dir, file := path.Split(strings.Trim(filePath, "/"))
-	return []byte(fmt.Sprintf("%s:%d:%s:%s",
+	// Follow the format SNAPSHOT:REV:PATH.
+	return []byte(fmt.Sprintf("%s:%d:%s",
 		snapshotid,
 		revision,
-		strings.TrimSuffix(dir, "/"),
-		file))
-}
-
-// key_prefix returns a suitable prefix to use in querying for direct
-// descendants of a given path.
-func key_prefix(snapshotid string, revision int, dirPath string) []byte {
-	return []byte(fmt.Sprintf("%s:%d:%s:", snapshotid, revision, strings.Trim(dirPath, "/")))
+		strings.TrimSuffix(filePath, "/"),
+	))
 }
 
 func encodeSnapshot(snapshot *duplicacy.Snapshot) (output []byte, err error) {
@@ -88,11 +78,11 @@ func decodeSnapshot(input []byte) (snapshot *duplicacy.Snapshot, err error) {
 	return snapshot, nil
 }
 
-func encodeEntry(entry *duplicacy.Entry) (output []byte, err error) {
+func encodeEntries(entries []*duplicacy.Entry) (output []byte, err error) {
 	var buf bytes.Buffer
 
 	enc := gob.NewEncoder(&buf)
-	err = enc.Encode(entry)
+	err = enc.Encode(entries)
 	if err != nil {
 		return nil, err
 	}
@@ -100,13 +90,13 @@ func encodeEntry(entry *duplicacy.Entry) (output []byte, err error) {
 	return buf.Bytes(), nil
 }
 
-func decodeEntry(input []byte) (entry *duplicacy.Entry, err error) {
+func decodeEntries(input []byte) (entries []*duplicacy.Entry, err error) {
 	buf := bytes.NewBuffer(input)
 	dec := gob.NewDecoder(buf)
-	err = dec.Decode(&entry)
+	err = dec.Decode(&entries)
 	if err != nil {
-		return &duplicacy.Entry{}, err
+		return nil, err
 	}
 
-	return entry, nil
+	return entries, nil
 }

@@ -40,7 +40,7 @@ func Test_encodedecode(t *testing.T) {
 			assert.NotNil(t, err)
 		} else {
 			if assert.Nil(t, err) {
-				dec, err := decodeEntry(enc)
+				dec, err := decodeEntries(enc)
 				if assert.Nil(t, err) {
 					assert.Equal(t, tt.input, dec)
 				}

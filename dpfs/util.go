@@ -2,6 +2,7 @@ package dpfs
 
 import (
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 
@@ -188,9 +189,10 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	fileCount := 0
 	dirCount := 0
 	entryCount := 0
-	totalSize := 0
 
 	batch := self.cache.CreateEntryBatch()
+
+	entriesByPath := make(map[string][]*duplicacy.Entry)
 
 	snap.ListRemoteFiles(self.config, self.chunkOperator, func(entry *duplicacy.Entry) bool {
 		entryCount++
@@ -199,47 +201,36 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 		} else {
 			fileCount++
 		}
-		k := key(snapshotid, revision, entry.Path)
-		if n, err := batch.PutEntry(k, entry); err != nil {
-			log.WithError(err).Debug(string(k))
-			return false
-		} else {
-			totalSize += n
-			if n > maxSize {
-				maxSize = n
-			}
-			if n > 10000 {
-				logger.
-					WithField("fileCountSoFar", fileCount).
-					WithField("dirCountSoFar", dirCount).
-					WithField("entryCountSoFar", entryCount).
-					WithField("path", entry.Path).
-					WithField("size", n).
-					Debug("big file")
-			}
-		}
-		if fileCount%10000 == 0 {
-			// Intermittent status updates
-			logger.
-				WithField("snap.NumberOfFiles", snap.NumberOfFiles).
-				WithField("fileCountSoFar", fileCount).
-				WithField("dirCountSoFar", dirCount).
-				WithField("entryCountSoFar", entryCount).
-				WithField("path", entry.Path).
-				WithField("sizeSoFar", totalSize).
-				Debug("still caching files")
-		}
+		dir, _ := path.Split(strings.Trim(entry.Path, "/"))
+		dir = strings.TrimSuffix(dir, "/")
+		entriesByPath[dir] = append(entriesByPath[dir], entry)
 		return true
 	})
 
-	self.cache.WriteEntryBatch(batch)
-
 	logger.
-		WithField("snap.NumberOfFiles", snap.NumberOfFiles).
 		WithField("fileCount", fileCount).
 		WithField("dirCount", dirCount).
 		WithField("entryCount", entryCount).
-		WithField("sequencelength", len(snap.FileSequence)).
+		WithField("pathCount", len(entriesByPath)).
+		WithField("rootPathSize", len(entriesByPath[""])).
+		Debug("tabulated all files")
+
+	for path, entries := range entriesByPath {
+		k := key(snapshotid, revision, path)
+		if n, err := batch.PutEntries(k, entries); err != nil {
+			log.WithField("key", string(k)).WithError(err).Debug("Error inserting key")
+			break
+		} else {
+			if n > maxSize {
+				maxSize = n
+			}
+		}
+	}
+
+	self.cache.WriteEntriesBatch(batch)
+
+	logger.
+		WithField("largestEntry", maxSize).
 		Debug("done caching files")
 
 	if err := self.cache.PutString(is_cached_key, isCached); err != nil {
@@ -300,5 +291,18 @@ func (self *Dpfs) findFile(snapshotid string, revision int, filepath string) (*d
 	// this should never be run before something that caches revision contents
 
 	// Use our cache
-	return self.cache.GetEntry(key(snapshotid, revision, filepath))
+	dir, _ := path.Split(strings.Trim(filepath, "/"))
+	key := key(snapshotid, revision, strings.TrimSuffix(dir, "/"))
+	if entries, err := self.cache.GetEntries(key); err != nil {
+		return &duplicacy.Entry{}, err
+	} else {
+		// find the matching entry
+		for _, entry := range entries {
+			candidatePath := strings.TrimSuffix(entry.Path, "/")
+			if candidatePath == filepath {
+				return entry, nil
+			}
+		}
+	}
+	return &duplicacy.Entry{}, fmt.Errorf("file not found in this path")
 }

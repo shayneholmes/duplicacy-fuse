@@ -9,12 +9,12 @@ import (
 	"go.mills.io/bitcask/v2"
 )
 
-type entryBatch struct {
+type entriesBatch struct {
 	batch *bitcask.Batch
 }
 
-func (b *entryBatch) PutEntry(key []byte, entry *duplicacy.Entry) (int, error) {
-	value, err := encodeEntry(entry)
+func (b *entriesBatch) PutEntries(key []byte, entries []*duplicacy.Entry) (int, error) {
+	value, err := encodeEntries(entries)
 	if err != nil {
 		return 0, err
 	}
@@ -64,13 +64,13 @@ func (kv *bitcaskKv) GetString(key []byte) (string, error) {
 	return cast.ToStringE([]byte(value))
 }
 
-func (kv *bitcaskKv) GetEntry(key []byte) (*duplicacy.Entry, error) {
+func (kv *bitcaskKv) GetEntries(key []byte) ([]*duplicacy.Entry, error) {
 	value, err := kv.db.Get(key)
 	if err != nil {
-		return &duplicacy.Entry{}, err
+		return nil, err
 	}
 
-	return decodeEntry(value)
+	return decodeEntries(value)
 }
 
 func (kv *bitcaskKv) GetSnapshot(key []byte) (*duplicacy.Snapshot, error) {
@@ -90,15 +90,15 @@ func (kv *bitcaskKv) PutString(key []byte, value string) error {
 	return kv.db.Put(key, []byte(value))
 }
 
-func (kv *bitcaskKv) CreateEntryBatch() EntryBatch {
-	return &entryBatch{batch: kv.db.Batch()}
+func (kv *bitcaskKv) CreateEntryBatch() EntriesBatch {
+	return &entriesBatch{batch: kv.db.Batch()}
 }
 
-func (kv *bitcaskKv) WriteEntryBatch(b EntryBatch) error {
-	if entryBatch, ok := b.(*entryBatch); ok {
-		return kv.db.WriteBatch(entryBatch.batch)
+func (kv *bitcaskKv) WriteEntriesBatch(b EntriesBatch) error {
+	if entriesBatch, ok := b.(*entriesBatch); ok {
+		return kv.db.WriteBatch(entriesBatch.batch)
 	}
-	return fmt.Errorf("provided EntryBatch isn't a entryBatch")
+	return fmt.Errorf("provided EntriesBatch isn't a entriesBatch")
 }
 
 func (kv *bitcaskKv) PutSnapshot(key []byte, snapshot *duplicacy.Snapshot) error {

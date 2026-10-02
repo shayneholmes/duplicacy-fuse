@@ -54,24 +54,19 @@ func (self *Dpfs) Readdir(path string,
 			}
 		}
 
-		prefix := key_prefix(info.snapshotid, info.revision, info.filepath)
+		key := key(info.snapshotid, info.revision, info.filepath)
 
-		snaplogger.WithField("prefix", string(prefix)).Debug()
-		if err := self.cache.Scan(prefix, func(key []byte) error {
-			relativePath := string(key[len(prefix):])
-			snaplogger = snaplogger.WithFields(log.Fields{
-				"key":          string(key),
-				"relativePath": relativePath,
-			})
-			if strings.ContainsRune(relativePath, '/') {
-				snaplogger.Debug("skipping: entry is inside a subdirectory")
-			} else {
-				snaplogger.Debug("matched")
+		snaplogger.WithField("key", string(key)).Debug("looking up entries in key")
+		if entries, err := self.cache.GetEntries(key); err != nil {
+			snaplogger.WithError(err).Warning()
+		} else {
+			for _, entry := range entries {
+				relativePath := entry.Path[len(info.filepath):]
+				// Parent directories don't have slashes, so there may be a prefix slash.
+				// Entries for directories _do_ include slashes, which leaves a suffix slash.
+				relativePath = strings.Trim(relativePath, "/")
 				fill(relativePath, nil, 0)
 			}
-			return nil
-		}); err != nil {
-			snaplogger.WithError(err).Warning()
 		}
 
 		return 0
