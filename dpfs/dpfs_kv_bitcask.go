@@ -29,7 +29,7 @@ type bitcaskKv struct {
 func NewBitcaskKv(path string) (kv *bitcaskKv, err error) {
 	db, err := bitcask.Open(path, []bitcask.Option{
 		bitcask.WithMaxKeySize(4096),
-		bitcask.WithMaxValueSize(8388608),
+		bitcask.WithMaxValueSize(100000000),
 	}...)
 	if err != nil {
 		log.WithError(err).Debug()

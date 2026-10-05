@@ -225,7 +225,11 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	for path, entries := range entriesByPath {
 		k := key(snapshotid, revision, path)
 		if n, err := batch.PutEntries(k, entries); err != nil {
-			log.WithField("key", string(k)).WithError(err).Debug("Error inserting key")
+			log.
+				WithField("key", k).
+				WithField("size", n).
+				WithError(err).
+				Debug("Error inserting key")
 			break
 		} else {
 			if n > maxSize {
