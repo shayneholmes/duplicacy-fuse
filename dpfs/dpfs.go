@@ -31,8 +31,8 @@ type Dpfs struct {
 	cache             DpfsKvStore
 	verifiedRevisions map[revisionCacheKey]bool
 
-	// Cache a single snapshot
-	lastSnap *duplicacy.Snapshot
+	// Cache some snapshots
+	snapshotCache *lru.Cache[revisionCacheKey, *duplicacy.Snapshot]
 
 	// Cache some data chunks
 	chunkCache *lru.Cache[string, *duplicacy.Chunk]
@@ -52,6 +52,11 @@ const (
 
 // NewDuplicacyfs creates an initial Dpfs struct
 func NewDuplicacyfs() *Dpfs {
+	snapshotCache, err := lru.New[revisionCacheKey, *duplicacy.Snapshot](10)
+	if err != nil {
+		log.WithError(err).Fatal("unable to create cache")
+	}
+
 	chunkCache, err := lru.New[string, *duplicacy.Chunk](100)
 	if err != nil {
 		log.WithError(err).Fatal("unable to create cache")
@@ -59,6 +64,7 @@ func NewDuplicacyfs() *Dpfs {
 	self := Dpfs{
 		verifiedRevisions: make(map[revisionCacheKey]bool),
 		chunkCache:        chunkCache,
+		snapshotCache:     snapshotCache,
 	}
 	return &self
 }

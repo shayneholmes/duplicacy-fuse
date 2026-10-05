@@ -274,19 +274,22 @@ func (self *Dpfs) createBackupManager() (*duplicacy.BackupManager, error) {
 }
 
 func (self *Dpfs) downloadSnapshotInfo(manager *duplicacy.BackupManager, snapshotid string, revision int, patterns []string, attributesNeeded bool) (*duplicacy.Snapshot, error) {
-	if self.lastSnap != nil && self.lastSnap.ID == snapshotid && self.lastSnap.Revision == revision {
-		return self.lastSnap, nil
+	k := revisionCacheKey{snapshotid, revision}
+	if snap, ok := self.snapshotCache.Get(k); ok {
+		return snap, nil
 	}
 	snap := manager.SnapshotManager.DownloadSnapshot(snapshotid, revision)
 	if snap == nil {
 		return nil, fmt.Errorf("snap was nil")
 	}
+	// Don't populate the cache until the full info is present.
 	return snap, nil
 }
 
 func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid string, revision int, patterns []string, attributesNeeded bool) (*duplicacy.Snapshot, error) {
-	if self.lastSnap != nil && self.lastSnap.ID == snapshotid && self.lastSnap.Revision == revision {
-		return self.lastSnap, nil
+	k := revisionCacheKey{snapshotid, revision}
+	if snap, ok := self.snapshotCache.Get(k); ok {
+		return snap, nil
 	}
 	snap, err := self.downloadSnapshotInfo(manager, snapshotid, revision, patterns, attributesNeeded)
 	if err != nil {
@@ -296,7 +299,7 @@ func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid 
 		return nil, fmt.Errorf("DownloadSnapshotSequences was false")
 	}
 
-	self.lastSnap = snap
+	self.snapshotCache.Add(k, snap)
 
 	return snap, nil
 }
