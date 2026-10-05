@@ -78,19 +78,27 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 		// We should provide some bytes from this chunk. Fetch the chunk and
 		// extract the relevant bytes.
 		// (This code is similar to duplicacy's RetrieveFile.)
-		lastChunk, lastChunkHash := self.chunkDownloader.GetLastDownloadedChunk()
 		var chunk *duplicacy.Chunk
-		if lastChunkHash == chunkHash {
-			chunk = lastChunk
+		if self.lastChunkHash != "" && self.lastChunkHash == chunkHash {
+			chunk = self.lastChunk
 		} else {
-			chunk = self.chunkOperator.Download(chunkHash,
-				i,     // chunkIndex
-				false, // isMetadata
-			)
-			logger.
-				WithField("chunk", i).
-				WithField("chunkID", chunk.GetID()).
-				Debug("fetched new chunk")
+			lastChunk, lastChunkHash := self.chunkDownloader.GetLastDownloadedChunk()
+			if lastChunkHash == chunkHash {
+				chunk = lastChunk
+			} else {
+				chunk = self.chunkOperator.Download(chunkHash,
+					i,     // chunkIndex
+					false, // isMetadata
+				)
+				logger.
+					WithField("lastChunkHash", lastChunkHash).
+					WithField("chunkHash", chunkHash).
+					WithField("chunk", i).
+					WithField("chunkID", chunk.GetID()).
+					Debug("fetched new chunk")
+			}
+			self.lastChunk = chunk
+			self.lastChunkHash = chunkHash
 		}
 
 		fileChunk := chunk.GetBytes()[fileChunkStart:fileChunkEnd]

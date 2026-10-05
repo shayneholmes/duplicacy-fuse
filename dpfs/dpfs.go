@@ -32,6 +32,10 @@ type Dpfs struct {
 	// Cache a single snapshot
 	lastSnap *duplicacy.Snapshot
 
+	// Cache a single chunk
+	lastChunk     *duplicacy.Chunk
+	lastChunkHash string
+
 	// Cache backup manager for a snapshot
 	lastBackupManager *duplicacy.BackupManager
 	// Store the ID of the cached manager to check validity
