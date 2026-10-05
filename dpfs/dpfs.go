@@ -39,8 +39,6 @@ type Dpfs struct {
 
 	// Cache backup manager for a snapshot
 	lastBackupManager *duplicacy.BackupManager
-	// Store the ID of the cached manager to check validity
-	lastBackupManagerId string
 }
 
 // Nicer names for fuse errors/return codes

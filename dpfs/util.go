@@ -89,7 +89,7 @@ func (self *Dpfs) cacheSnapshotRevisions(snapshotid string) error {
 	}
 
 	// Snapshot revisions aren't in cache: Fetch them.
-	manager, err := self.createBackupManager(snapshotid)
+	manager, err := self.createBackupManager()
 	if err != nil {
 		return fmt.Errorf("problem creating manager: %w", err)
 	}
@@ -179,7 +179,7 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	logger.WithField("is_cached_key", string(is_cached_key)).Debug("not cached")
 
 	// Retrieve files
-	manager, err := self.createBackupManager(snapshotid)
+	manager, err := self.createBackupManager()
 	if err != nil {
 		return fmt.Errorf("problem creating manager: %w", err)
 	}
@@ -248,11 +248,19 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	return nil
 }
 
-func (self *Dpfs) createBackupManager(snapshotid string) (*duplicacy.BackupManager, error) {
-	if self.lastBackupManager != nil && self.lastBackupManagerId == snapshotid {
+func (self *Dpfs) createBackupManager() (*duplicacy.BackupManager, error) {
+	// Snapshot IDs are used only during backup or restore, and we're doing
+	// neither. As long as the storage stays constant, we want to reuse the
+	// backup manager. Additionally, creating a new backup manager for the same
+	// storage reconfigures the nesting levels, which isn't thread-safe: it
+	// temporarily resets the nesting levels to `nil`, which causes problems if
+	// another operation is going on.
+	EMPTY_SNAPSHOT_ID := ""
+
+	if self.lastBackupManager != nil {
 		return self.lastBackupManager, nil
 	}
-	manager := duplicacy.CreateBackupManager(snapshotid, self.storage, self.repository, self.password, self.preference.NobackupFile, self.preference.FiltersFile, false)
+	manager := duplicacy.CreateBackupManager(EMPTY_SNAPSHOT_ID, self.storage, self.repository, self.password, self.preference.NobackupFile, self.preference.FiltersFile, false)
 	if manager == nil {
 		return nil, fmt.Errorf("manager was nil")
 	}
@@ -261,7 +269,6 @@ func (self *Dpfs) createBackupManager(snapshotid string) (*duplicacy.BackupManag
 	}
 
 	self.lastBackupManager = manager
-	self.lastBackupManagerId = snapshotid
 
 	return manager, nil
 }

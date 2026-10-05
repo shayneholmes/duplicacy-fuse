@@ -37,7 +37,7 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 		return 0
 	}
 
-	manager, err := self.createBackupManager(info.snapshotid)
+	manager, err := self.createBackupManager()
 	if err != nil {
 		logger.WithError(err).Debug()
 		return 0
