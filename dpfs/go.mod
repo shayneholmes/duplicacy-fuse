@@ -6,6 +6,7 @@ require (
 	github.com/OpenPeeDeeP/xdg v1.0.0
 	github.com/billziss-gh/cgofuse v1.2.0
 	github.com/gilbertchen/duplicacy v1.2.6-0.20250502193959-2def0161b377
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cast v1.6.0
@@ -46,7 +47,6 @@ require (
 	github.com/golang/protobuf v1.5.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
 	github.com/hashicorp/go-immutable-radix/v2 v2.0.0 // indirect
-	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hirochachacha/go-smb2 v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect

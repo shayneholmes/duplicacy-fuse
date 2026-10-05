@@ -5,6 +5,8 @@ import (
 
 	"github.com/billziss-gh/cgofuse/fuse"
 	duplicacy "github.com/gilbertchen/duplicacy/src"
+	lru "github.com/hashicorp/golang-lru/v2"
+	log "github.com/sirupsen/logrus"
 )
 
 type revisionCacheKey struct {
@@ -32,9 +34,8 @@ type Dpfs struct {
 	// Cache a single snapshot
 	lastSnap *duplicacy.Snapshot
 
-	// Cache a single chunk
-	lastChunk     *duplicacy.Chunk
-	lastChunkHash string
+	// Cache some data chunks
+	chunkCache *lru.Cache[string, *duplicacy.Chunk]
 
 	// Cache backup manager for a snapshot
 	lastBackupManager *duplicacy.BackupManager
@@ -53,8 +54,13 @@ const (
 
 // NewDuplicacyfs creates an initial Dpfs struct
 func NewDuplicacyfs() *Dpfs {
+	chunkCache, err := lru.New[string, *duplicacy.Chunk](100)
+	if err != nil {
+		log.WithError(err).Fatal("unable to create cache")
+	}
 	self := Dpfs{
 		verifiedRevisions: make(map[revisionCacheKey]bool),
+		chunkCache:        chunkCache,
 	}
 	return &self
 }
