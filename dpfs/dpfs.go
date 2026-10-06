@@ -20,7 +20,6 @@ type Dpfs struct {
 	config            *duplicacy.Config
 	storage           duplicacy.Storage
 	chunkOperator     *duplicacy.ChunkOperator
-	chunkDownloader   *duplicacy.ChunkDownloader
 	root              string
 	snapshotid        string
 	revision          int
@@ -37,8 +36,11 @@ type Dpfs struct {
 	// Cache some data chunks
 	chunkCache *lru.Cache[string, *duplicacy.Chunk]
 
-	// Cache downloaders by file
-	downloaderCache *lru.Cache[string, *duplicacy.ChunkDownloader]
+	// Contains an entry for a chunk while it is downloading. Before the channel
+	// closes, the value will be available in the chunk cache, and it will send
+	// the value to anyone listening.
+	activeChunkDownloads map[string]chan *duplicacy.Chunk
+	chunkDownloadsMu     sync.Mutex
 
 	// Cache backup manager for a snapshot
 	lastBackupManager *duplicacy.BackupManager
@@ -59,19 +61,15 @@ func NewDuplicacyfs() *Dpfs {
 	if err != nil {
 		log.WithError(err).Fatal("unable to create cache")
 	}
-	downloaderCache, err := lru.New[string, *duplicacy.ChunkDownloader](10)
-	if err != nil {
-		log.WithError(err).Fatal("unable to create cache")
-	}
 	chunkCache, err := lru.New[string, *duplicacy.Chunk](100)
 	if err != nil {
 		log.WithError(err).Fatal("unable to create cache")
 	}
 	self := Dpfs{
-		verifiedRevisions: make(map[revisionCacheKey]bool),
-		chunkCache:        chunkCache,
-		snapshotCache:     snapshotCache,
-		downloaderCache:   downloaderCache,
+		verifiedRevisions:    make(map[revisionCacheKey]bool),
+		activeChunkDownloads: make(map[string]chan *duplicacy.Chunk),
+		chunkCache:           chunkCache,
+		snapshotCache:        snapshotCache,
 	}
 	return &self
 }

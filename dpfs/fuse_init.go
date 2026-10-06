@@ -143,8 +143,4 @@ func (self *Dpfs) Init() {
 		/* threads= */ 10,
 		/* allowFailures= */ false,
 	)
-
-	self.chunkDownloader = duplicacy.CreateChunkDownloader(
-		self.chunkOperator,
-	)
 }

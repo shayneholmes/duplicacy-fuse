@@ -8,6 +8,11 @@ import (
 
 // Read satisfies the Read implementation from fuse.FileSystemInterface
 func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.WithField("recover", r).Debug("Recovered")
+		}
+	}()
 	logger := log.WithFields(
 		log.Fields{
 			"op":     "Read",
@@ -75,33 +80,30 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 			continue
 		}
 
-		logger.
-			WithField("chunkHash", chunkHash).
-			WithField("chunkIndex", i).
-			WithField("fileChunkStart", fileChunkStart).
-			WithField("fileChunkEnd", fileChunkEnd).
-			Debug("ready to get data")
 		// We should provide some bytes from this chunk. Fetch the chunk and
 		// extract the relevant bytes.
-		// (This code is similar to duplicacy's RetrieveFile.)
-		var chunk *duplicacy.Chunk
-		if cachedChunk, ok := self.chunkCache.Get(chunkHash); ok {
-			chunk = cachedChunk
-			logger.Debug("got a chunk from cache")
-		} else {
-			logger.Debug("configuring a chunk downloader")
-			chunkDownloader := self.getChunkDownloader(file)
-			logger.Debug("getting a chunk from downloader")
-			chunk = chunkDownloader.WaitForChunk(i)
-			logger.Debug("got a chunk from downloader")
-			logger.
-				WithField("chunkHash", chunkHash).
-				WithField("chunkIndex", i).
-				WithField("chunkID", chunk.GetID()).
-				Debug("fetched new chunk")
-			self.chunkCache.Add(chunkHash, chunk)
+
+		c := make(chan *duplicacy.Chunk)
+		completionFunc := func(chunk *duplicacy.Chunk) {
+			c <- chunk
+		}
+		self.getDataChunkAsync(chunkHash, i, completionFunc, logger)
+
+		// Speculatively prefetch the next few chunks
+		for offset := 1; offset <= 3; offset++ {
+			if i+offset > file.EndChunk {
+				break
+			}
+			self.getDataChunkAsync(
+				snapshot.ChunkHashes[i+offset],
+				i+offset,
+				func(chunk *duplicacy.Chunk) {},
+				logger.
+					WithField("prefetch", offset),
+			)
 		}
 
+		chunk := <-c
 		fileChunk := chunk.GetBytes()[fileChunkStart:fileChunkEnd]
 
 		start := offset - fileCursor
@@ -129,4 +131,56 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 	}
 
 	return
+}
+
+func (self *Dpfs) getDataChunkAsync(chunkHash string, i int, f func(chunk *duplicacy.Chunk), logger *log.Entry) {
+	logger = logger.
+		WithField("chunkID", self.config.GetChunkIDFromHash(chunkHash)).
+		WithField("chunkIndex", i)
+	if cachedChunk, ok := self.chunkCache.Get(chunkHash); ok {
+		go f(cachedChunk)
+		return
+	}
+	self.chunkDownloadsMu.Lock()
+	if c, ok := self.activeChunkDownloads[chunkHash]; ok {
+		// This chunk is currently being downloaded. Wait for it.
+		self.chunkDownloadsMu.Unlock()
+		go func() {
+			chunk := <-c
+			f(chunk)
+		}()
+		return
+	} else {
+		// Fetch the chunk
+		c := make(chan *duplicacy.Chunk)
+		self.activeChunkDownloads[chunkHash] = c
+		self.chunkDownloadsMu.Unlock()
+
+		self.chunkOperator.DownloadAsync(
+			chunkHash,
+			i,     // chunkIndex
+			false, // isMetadata
+			func(chunk *duplicacy.Chunk, _ int) {
+				logger.Debug("fetched new chunk")
+
+				self.chunkCache.Add(chunkHash, chunk)
+
+				self.chunkDownloadsMu.Lock()
+				delete(self.activeChunkDownloads, chunkHash)
+				self.chunkDownloadsMu.Unlock()
+
+				// Notify everyone who's listening
+				for {
+					select {
+					case c <- chunk:
+						continue
+					default:
+						close(c)
+						f(chunk)
+						return
+					}
+				}
+			},
+		)
+	}
 }
