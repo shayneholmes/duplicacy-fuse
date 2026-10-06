@@ -40,7 +40,7 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 			snap, err := self.cache.GetSnapshot(key)
 			if err != nil {
 				// We haven't cached the revision info, so we can't provide a timestamp.
-				logger.WithField("key", string(key)).WithError(err).Warning("snapshot info not found in cache")
+				logger.WithField("key", string(key)).WithError(err).Debug("snapshot info not found in cache")
 			} else {
 				stat.Mtim = fuse.Timespec{
 					Sec: snap.StartTime,
