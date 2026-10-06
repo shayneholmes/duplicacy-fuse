@@ -203,13 +203,15 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 
 	snap.ListRemoteFiles(self.config, self.chunkOperator, func(entry *duplicacy.Entry) bool {
 		entryCount++
+		trimmedPath := strings.Trim(entry.Path, "/")
+		dir, _ := path.Split(trimmedPath)
+		dir = strings.TrimSuffix(dir, "/")
 		if entry.IsDir() {
 			dirCount++
+			entriesByPath[trimmedPath] = entriesByPath[trimmedPath]
 		} else {
 			fileCount++
 		}
-		dir, _ := path.Split(strings.Trim(entry.Path, "/"))
-		dir = strings.TrimSuffix(dir, "/")
 		entriesByPath[dir] = append(entriesByPath[dir], entry)
 		return true
 	})
