@@ -58,7 +58,7 @@ func (self *Dpfs) Readdir(path string,
 
 		snaplogger.WithField("key", string(key)).Debug("looking up entries in key")
 		if entries, err := self.cache.GetEntries(key); err != nil {
-			snaplogger.WithError(err).Warning()
+			snaplogger.WithField("key", string(key)).WithError(err).Warning()
 		} else {
 			for _, entry := range entries {
 				relativePath := entry.Path[len(info.filepath):]

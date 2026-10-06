@@ -17,6 +17,7 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 		log.Fields{
 			"op":     "Read",
 			"path":   path,
+			"buff":   len(buff),
 			"offset": offset,
 			"fh":     fh,
 			"id":     uuid.NewV4().String(),
@@ -117,6 +118,7 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 		n += copy(buff[n:], fileChunk[start:end])
 		logger.
 			WithField("chunk", i).
+			WithField("chunkID", chunk.GetID()).
 			WithField("n", n).
 			WithField("start", start).
 			WithField("end", end).

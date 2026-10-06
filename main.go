@@ -9,6 +9,8 @@ import (
 )
 
 func main() {
+	log.SetFormatter(&log.JSONFormatter{})
+
 	if len(os.Args) <= 1 {
 		log.Fatal("missing mountpoint")
 	}
