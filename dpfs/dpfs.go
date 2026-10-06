@@ -37,6 +37,9 @@ type Dpfs struct {
 	// Cache some data chunks
 	chunkCache *lru.Cache[string, *duplicacy.Chunk]
 
+	// Cache downloaders by file
+	downloaderCache *lru.Cache[string, *duplicacy.ChunkDownloader]
+
 	// Cache backup manager for a snapshot
 	lastBackupManager *duplicacy.BackupManager
 }
@@ -56,7 +59,10 @@ func NewDuplicacyfs() *Dpfs {
 	if err != nil {
 		log.WithError(err).Fatal("unable to create cache")
 	}
-
+	downloaderCache, err := lru.New[string, *duplicacy.ChunkDownloader](10)
+	if err != nil {
+		log.WithError(err).Fatal("unable to create cache")
+	}
 	chunkCache, err := lru.New[string, *duplicacy.Chunk](100)
 	if err != nil {
 		log.WithError(err).Fatal("unable to create cache")
@@ -65,6 +71,7 @@ func NewDuplicacyfs() *Dpfs {
 		verifiedRevisions: make(map[revisionCacheKey]bool),
 		chunkCache:        chunkCache,
 		snapshotCache:     snapshotCache,
+		downloaderCache:   downloaderCache,
 	}
 	return &self
 }

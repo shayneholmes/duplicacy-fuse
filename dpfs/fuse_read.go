@@ -75,28 +75,30 @@ func (self *Dpfs) Read(path string, buff []byte, offset int64, fh uint64) (n int
 			continue
 		}
 
+		logger.
+			WithField("chunkHash", chunkHash).
+			WithField("chunkIndex", i).
+			WithField("fileChunkStart", fileChunkStart).
+			WithField("fileChunkEnd", fileChunkEnd).
+			Debug("ready to get data")
 		// We should provide some bytes from this chunk. Fetch the chunk and
 		// extract the relevant bytes.
 		// (This code is similar to duplicacy's RetrieveFile.)
 		var chunk *duplicacy.Chunk
 		if cachedChunk, ok := self.chunkCache.Get(chunkHash); ok {
 			chunk = cachedChunk
+			logger.Debug("got a chunk from cache")
 		} else {
-			lastChunk, lastChunkHash := self.chunkDownloader.GetLastDownloadedChunk()
-			if lastChunkHash == chunkHash {
-				chunk = lastChunk
-			} else {
-				chunk = self.chunkOperator.Download(chunkHash,
-					i,     // chunkIndex
-					false, // isMetadata
-				)
-				logger.
-					WithField("lastChunkHash", lastChunkHash).
-					WithField("chunkHash", chunkHash).
-					WithField("chunk", i).
-					WithField("chunkID", chunk.GetID()).
-					Debug("fetched new chunk")
-			}
+			logger.Debug("configuring a chunk downloader")
+			chunkDownloader := self.getChunkDownloader(file)
+			logger.Debug("getting a chunk from downloader")
+			chunk = chunkDownloader.WaitForChunk(i)
+			logger.Debug("got a chunk from downloader")
+			logger.
+				WithField("chunkHash", chunkHash).
+				WithField("chunkIndex", i).
+				WithField("chunkID", chunk.GetID()).
+				Debug("fetched new chunk")
 			self.chunkCache.Add(chunkHash, chunk)
 		}
 

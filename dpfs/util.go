@@ -308,6 +308,17 @@ func (self *Dpfs) downloadSnapshot(manager *duplicacy.BackupManager, snapshotid 
 	return snap, nil
 }
 
+func (self *Dpfs) getChunkDownloader(file *duplicacy.Entry) *duplicacy.ChunkDownloader {
+	// Use a cache so that subsequent reads on the file get the same downloader
+	// and can use the prefetched chunks
+	if downloader, ok := self.downloaderCache.Get(file.Path); ok {
+		return downloader
+	}
+	downloader := duplicacy.CreateChunkDownloader(self.chunkOperator)
+	self.downloaderCache.Add(file.Path, downloader)
+	return downloader
+}
+
 func (self *Dpfs) findFile(snapshotid string, revision int, filepath string) (*duplicacy.Entry, error) {
 	// should we update our cache here?
 	// this should never be run before something that caches revision contents

@@ -140,7 +140,7 @@ func (self *Dpfs) Init() {
 		nil, /* no cache */
 		/* showStatistics= */ false,
 		/* rewriteChunks= */ false,
-		/* threads= */ 1,
+		/* threads= */ 10,
 		/* allowFailures= */ false,
 	)
 
