@@ -5,6 +5,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 
 	duplicacy "github.com/gilbertchen/duplicacy/src"
 	log "github.com/sirupsen/logrus"
@@ -104,8 +105,8 @@ func (self *Dpfs) cacheSnapshotRevisions(snapshotid string) error {
 		}
 	}
 
-	self.mu.Lock()
-	defer self.mu.Unlock()
+	self.cacheWriteMu.Lock()
+	defer self.cacheWriteMu.Unlock()
 	if err := self.cache.PutString(cacheKey, "sentinel"); err != nil {
 		return fmt.Errorf("problem with Put(%s): %w", cacheKey, err)
 	}
@@ -129,8 +130,8 @@ func (self *Dpfs) cacheRevisionInfo(manager *duplicacy.BackupManager, snapshotid
 	}
 
 	// The revision info isn't in the cache: Fetch it and load it
-	self.mu.Lock()
-	defer self.mu.Unlock()
+	self.cacheWriteMu.Lock()
+	defer self.cacheWriteMu.Unlock()
 
 	if self.cache.Has(cacheKey) {
 		logger.Debug("already cached")
@@ -152,9 +153,6 @@ func (self *Dpfs) cacheRevisionInfo(manager *duplicacy.BackupManager, snapshotid
 }
 
 func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
-	self.mu.Lock()
-	defer self.mu.Unlock()
-
 	revisionCacheKey := revisionCacheKey{
 		snapshotid: snapshotid,
 		revision:   revision,
@@ -171,6 +169,14 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	if self.cache == nil {
 		return fmt.Errorf("cache was nil")
 	}
+
+	// Lock the revision cache before checking the cache, to ensure that we
+	// notice a cached snapshot in the same operation as checking for an
+	// in-progress one. Otherwise, we run the risk that this thread checks the
+	// cache, then the in-progress one finishes and deletes the lock, then we
+	// check for the lock and get it again.
+	self.revisionCacheMu.Lock()
+
 	logger.WithField("is_cached_key", string(is_cached_key)).Debug("checking if cached already")
 	if v, err := self.cache.GetString(is_cached_key); err == nil && v == isCached {
 		logger.WithField("is_cached_key", string(is_cached_key)).Debug("already cached")
@@ -178,7 +184,29 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	}
 	logger.WithField("is_cached_key", string(is_cached_key)).Debug("not cached")
 
-	// Retrieve files
+	// Check if any other thread is already working to cache the revision.
+	if mu, ok := self.activeRevisionCaching[revisionCacheKey]; ok {
+		self.revisionCacheMu.Unlock()
+		logger.WithField("is_cached_key", string(is_cached_key)).Debug("waiting for another thread to cache")
+		mu.RLock()
+		mu.RUnlock()
+		if v, err := self.cache.GetString(is_cached_key); err == nil && v == isCached {
+			return nil
+		} else {
+			return fmt.Errorf("waited for cache, but it wasn't found")
+		}
+	}
+
+	// No existing lock. It's up to us to make one.
+	mu := &sync.RWMutex{}
+	mu.Lock()
+	defer mu.Unlock()
+	self.activeRevisionCaching[revisionCacheKey] = mu
+	self.revisionCacheMu.Unlock()
+
+	// Retrieve revision and cache its files
+	logger.WithField("is_cached_key", string(is_cached_key)).Debug("caching revision")
+
 	manager, err := self.createBackupManager()
 	if err != nil {
 		return fmt.Errorf("problem creating manager: %w", err)
@@ -240,6 +268,9 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 		}
 	}
 
+	self.cacheWriteMu.Lock()
+	defer self.cacheWriteMu.Unlock()
+
 	self.cache.WriteEntriesBatch(batch)
 
 	logger.
@@ -251,6 +282,10 @@ func (self *Dpfs) cacheRevisionFiles(snapshotid string, revision int) error {
 	}
 	self.verifiedRevisions[revisionCacheKey] = true
 
+	// Now that we've set up the cache, we can clear out this check.
+	self.revisionCacheMu.Lock()
+	defer self.revisionCacheMu.Unlock()
+	delete(self.activeRevisionCaching, revisionCacheKey)
 	return nil
 }
 

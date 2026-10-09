@@ -26,9 +26,12 @@ type Dpfs struct {
 	password          string
 	preference        *duplicacy.Preference
 	repository        string
-	mu                sync.Mutex
+	cacheWriteMu      sync.Mutex
 	cache             DpfsKvStore
 	verifiedRevisions map[revisionCacheKey]bool
+
+	revisionCacheMu       sync.Mutex
+	activeRevisionCaching map[revisionCacheKey]*sync.RWMutex
 
 	// Cache some snapshots
 	snapshotCache *lru.Cache[revisionCacheKey, *duplicacy.Snapshot]
@@ -66,10 +69,11 @@ func NewDuplicacyfs() *Dpfs {
 		log.WithError(err).Fatal("unable to create cache")
 	}
 	self := Dpfs{
-		verifiedRevisions:    make(map[revisionCacheKey]bool),
-		activeChunkDownloads: make(map[string]chan *duplicacy.Chunk),
-		chunkCache:           chunkCache,
-		snapshotCache:        snapshotCache,
+		verifiedRevisions:     make(map[revisionCacheKey]bool),
+		activeChunkDownloads:  make(map[string]chan *duplicacy.Chunk),
+		activeRevisionCaching: make(map[revisionCacheKey]*sync.RWMutex),
+		chunkCache:            chunkCache,
+		snapshotCache:         snapshotCache,
 	}
 	return &self
 }
