@@ -2,6 +2,8 @@ package dpfs
 
 import (
 	"fmt"
+	"os/user"
+	"strconv"
 
 	"github.com/billziss-gh/cgofuse/fuse"
 	uuid "github.com/satori/go.uuid"
@@ -84,8 +86,11 @@ func (self *Dpfs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) 
 		Sec: entry.Time,
 	}
 
-	stat.Uid = uint32(entry.UID)
-	stat.Gid = uint32(entry.GID)
+	u, _ := user.Current()
+	uid, _ := strconv.Atoi(u.Uid)
+	gid, _ := strconv.Atoi(u.Gid)
+	stat.Uid = uint32(uid)
+	stat.Gid = uint32(gid)
 
 	return 0
 }
